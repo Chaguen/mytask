@@ -8,7 +8,7 @@ import { useTodoContext } from "@/contexts/TodoContext";
 import { TodoPath, MAX_TODO_DEPTH } from "@/types/todo-tree";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Todo } from "@/types/todo";
-import { Eye, EyeOff, Star, Volume2, VolumeX } from "lucide-react";
+import { Eye, EyeOff, Star } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -28,6 +28,9 @@ import { useState, useCallback } from "react";
 import { CompletionCelebration } from "./CompletionCelebration";
 
 function TodoListContent() {
+  console.log('[TodoListContent] Starting render');
+  
+  console.log('[TodoListContent] Calling useTodoContext');
   const {
     todos,
     visibleTodos,
@@ -54,19 +57,21 @@ function TodoListContent() {
     getProjectPath,
     reorderTodos,
     stats,
-    isMuted,
-    toggleMute,
   } = useTodoContext();
 
-  const [, setActiveId] = useState<number | null>(null);
+  console.log('[TodoListContent] Calling useState for activeId');
+  const [activeId, setActiveId] = useState<number | null>(null);
+  console.log('[TodoListContent] Calling useState for showCelebration');
   const [showCelebration, setShowCelebration] = useState(false);
   
+  console.log('[TodoListContent] Calling useSensors');
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+  console.log('[TodoListContent] useSensors completed');
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as number);
@@ -92,26 +97,8 @@ function TodoListContent() {
     setActiveId(null);
   };
 
-  if (loading) {
-    return (
-      <Card className="w-full max-w-2xl">
-        <CardContent className="py-8 text-center text-muted-foreground">
-          Loading todos...
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="w-full max-w-2xl">
-        <CardContent className="py-8 text-center text-destructive">
-          Error: {error}
-        </CardContent>
-      </Card>
-    );
-  }
-
+  // IMPORTANT: All hooks must be called before any conditional returns
+  console.log('[TodoListContent] Calling useCallback for renderTodo');
   const renderTodo = useCallback((todo: Todo, level: number = 0, parentIds: TodoPath = [], parentTodo?: Todo) => {
     // Prevent rendering beyond max depth
     if (level >= MAX_TODO_DEPTH) {
@@ -187,6 +174,30 @@ function TodoListContent() {
     setTodoEditing,
   ]);
 
+  // Check loading and error states after all hooks are called
+  if (loading) {
+    console.log('[TodoListContent] Returning loading state');
+    return (
+      <Card className="w-full max-w-2xl">
+        <CardContent className="py-8 text-center text-muted-foreground">
+          Loading todos...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    console.log('[TodoListContent] Returning error state');
+    return (
+      <Card className="w-full max-w-2xl">
+        <CardContent className="py-8 text-center text-destructive">
+          Error: {error}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  console.log('[TodoListContent] Rendering main content');
   return (
     <DndContext 
       sensors={sensors}
@@ -200,15 +211,6 @@ function TodoListContent() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">My Todo List</CardTitle>
             <div className="flex items-center gap-2">
-              <Button
-                variant={isMuted ? "secondary" : "ghost"}
-                size="icon"
-                onClick={toggleMute}
-                className="h-8 w-8"
-                title={isMuted ? '소리 켜기' : '소리 끄기'}
-              >
-                {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-              </Button>
               <Button
                 variant={showOnlyFocusTasks ? "secondary" : "ghost"}
                 size="icon"

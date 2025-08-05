@@ -10,7 +10,6 @@ import { EditableTodoText } from "./EditableTodoText";
 import { useTodoStyles, useTodoKeyboardShortcuts } from "@/hooks/useTodoStyles";
 import { formatCompletionTime, getFullDateTime } from "@/utils/date-helpers";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCompletionSound } from "@/hooks/useCompletionSound";
 
 interface TodoItemProps {
   todo: Todo;
@@ -37,8 +36,6 @@ function TodoItemComponent({
   level = 0,
   parentIds = [],
   isExpanded = false,
-  isNextAction = false,
-  hasNextAction = false,
   projectPath,
   showProjectPath = false,
   showFocusPath = false,
@@ -52,13 +49,20 @@ function TodoItemComponent({
   onSetEditing,
   renderSubtask,
 }: TodoItemProps) {
+  console.log('[TodoItem] Rendering:', { todoId: todo.id, level, parentIds });
+  
+  // All hooks must be called unconditionally at the top
+  console.log('[TodoItem] Calling useState for showCelebration');
+  const [showCelebration, setShowCelebration] = useState(false);
+  console.log('[TodoItem] Calling useState for isChecked');
+  const [isChecked, setIsChecked] = useState(todo.completed);
+  
+  // Computed values after hooks
   const hasSubtasks = todo.subtasks && todo.subtasks.length > 0;
   const completedSubtasks = todo.subtasks?.filter(st => st.completed).length || 0;
   const totalSubtasks = todo.subtasks?.length || 0;
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [isChecked, setIsChecked] = useState(todo.completed);
-  const { playCompletionSound, playCheckSound } = useCompletionSound();
 
+  console.log('[TodoItem] Calling useTodoStyles');
   const styles = useTodoStyles({
     level,
     isCompleted: todo.completed,
@@ -66,7 +70,7 @@ function TodoItemComponent({
     isExpanded,
   });
 
-
+  console.log('[TodoItem] Calling useTodoKeyboardShortcuts');
   const { handleKeyDown } = useTodoKeyboardShortcuts({
     onAddTodo: onAddSubtask,
     onToggleExpand: onExpand ? () => onExpand(todo.id) : undefined,
@@ -85,7 +89,9 @@ function TodoItemComponent({
     }
   };
 
+  console.log('[TodoItem] Calling useEffect');
   useEffect(() => {
+    console.log('[TodoItem] useEffect running for todo.completed:', todo.completed);
     setIsChecked(todo.completed);
   }, [todo.completed]);
 
@@ -94,13 +100,9 @@ function TodoItemComponent({
     setIsChecked(newCheckedState);
     
     if (newCheckedState && !hasSubtasks) {
-      // Play completion sound and show celebration for tasks without subtasks
-      playCompletionSound();
+      // Show celebration for tasks without subtasks
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 1500);
-    } else if (newCheckedState) {
-      // Just play check sound for tasks with subtasks
-      playCheckSound();
     }
     
     onToggle(todo.id, parentIds);

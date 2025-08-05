@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext } from 'react';
 import { useTodos } from '@/hooks/useTodos';
-import { useSoundSettings } from '@/hooks/useSoundSettings';
 import { Todo } from '@/types/todo';
 import { TodoPath } from '@/types/todo-tree';
 
@@ -43,18 +42,18 @@ interface TodoContextType {
     maxDepth: number;
     todayCompleted: number;
   };
-  isMuted: boolean;
-  toggleMute: () => void;
 }
 
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
 
 export function TodoProvider({ children }: { children: React.ReactNode }) {
+  console.log('[TodoProvider] Starting render');
+  console.log('[TodoProvider] Calling useTodos');
   const todoData = useTodos();
-  const soundSettings = useSoundSettings();
+  console.log('[TodoProvider] useTodos completed');
 
   return (
-    <TodoContext.Provider value={{ ...todoData, ...soundSettings }}>
+    <TodoContext.Provider value={todoData}>
       {children}
     </TodoContext.Provider>
   );
