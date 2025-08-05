@@ -8,7 +8,7 @@ import { useTodos } from "@/hooks/useTodos";
 import { TodoPath, MAX_TODO_DEPTH } from "@/types/todo-tree";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Todo } from "@/types/todo";
-import { Eye, EyeOff, Zap } from "lucide-react";
+import { Eye, EyeOff, Zap, Star } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -48,6 +48,9 @@ function TodoListContent() {
     toggleShowCompleted,
     showOnlyNextActions,
     toggleShowOnlyNextActions,
+    showOnlyFocusTasks,
+    toggleShowOnlyFocusTasks,
+    toggleFocusTodo,
     nextActions,
     isNextAction,
     getProjectPath,
@@ -120,7 +123,7 @@ function TodoListContent() {
       // Check if this todo contains any next actions
       return na.path.slice(0, currentPath.length).every((id, idx) => id === currentPath[idx]);
     });
-    const projectPath = showOnlyNextActions ? getProjectPath(todos, currentPath) : undefined;
+    const projectPath = (showOnlyNextActions || showOnlyFocusTasks) ? getProjectPath(todos, currentPath) : undefined;
 
     return (
       <SortableTodoItem
@@ -134,9 +137,11 @@ function TodoListContent() {
         hasNextAction={hasNA}
         projectPath={projectPath}
         showProjectPath={showOnlyNextActions}
+        showFocusPath={showOnlyFocusTasks}
         onToggle={toggleTodo}
         onDelete={deleteTodo}
         onCopy={copyTodo}
+        onToggleFocus={toggleFocusTodo}
         onExpand={toggleExpanded}
         onAddSubtask={() => addSubtask([...parentIds, todo.id])}
         onUpdateText={updateTodoText}
@@ -174,7 +179,17 @@ function TodoListContent() {
               {stats.completed}/{stats.total} 완료
               {stats.hiddenCount > 0 && ` (${stats.hiddenCount}개 숨김)`}
               {stats.nextActionsCount > 0 && ` | ${stats.nextActionsCount}개 다음 행동`}
+              {stats.focusTasksCount > 0 && ` | ${stats.focusTasksCount}개 집중`}
             </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleShowOnlyFocusTasks}
+              className="text-xs"
+            >
+              <Star className="h-3 w-3 mr-1" />
+              {showOnlyFocusTasks ? '전체 보기' : '집중할 작업'}
+            </Button>
             <Button
               variant="ghost"
               size="sm"

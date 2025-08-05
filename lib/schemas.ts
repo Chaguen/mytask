@@ -6,6 +6,7 @@ const BaseTodoSchema = z.object({
   completed: z.boolean(),
   createdAt: z.string(),
   completedAt: z.string().optional(),
+  focusPriority: z.number().min(1).max(5).optional(),
 });
 
 export type TodoInput = z.infer<typeof BaseTodoSchema>;

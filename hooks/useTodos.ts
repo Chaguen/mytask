@@ -16,7 +16,10 @@ import {
   isNextAction,
   getProjectPath,
   reorderTodos,
-  getParentIdsToCollapse
+  getParentIdsToCollapse,
+  toggleFocusTodo,
+  getFocusTodos,
+  autoReorderFocusPriorities
 } from '@/utils/todo-helpers';
 import { findTodoByPath } from '@/utils/todo-tree-utils';
 import { DEBOUNCE_DELAY } from '@/constants/todo';
@@ -28,6 +31,7 @@ export function useTodos() {
   const [subtaskInputs, setSubtaskInputs] = useState<{ [key: number]: string }>({});
   const [showCompleted, setShowCompleted] = useState<boolean>(true);
   const [showOnlyNextActions, setShowOnlyNextActions] = useState<boolean>(false);
+  const [showOnlyFocusTasks, setShowOnlyFocusTasks] = useState<boolean>(false);
   const { loading, error, loadTodos, saveTodos } = useTodoAPI();
   const { expandedTodos, toggleExpanded, expand, collapse, isExpanded } = useExpandedState();
   
@@ -36,6 +40,11 @@ export function useTodos() {
   // Memoized next actions
   const nextActions = useMemo(() => {
     return getAllNextActions(todos);
+  }, [todos]);
+
+  // Memoized focus todos
+  const focusTodos = useMemo(() => {
+    return getFocusTodos(todos);
   }, [todos]);
 
   // Memoized visible todos (filter out completed top-level todos if showCompleted is false)
@@ -59,8 +68,20 @@ export function useTodos() {
       });
     }
     
+    // Filter by focus tasks
+    if (showOnlyFocusTasks) {
+      const focusIds = new Set(focusTodos.map(ft => ft.todo.id));
+      // Include todos that have focus priority or contain focus tasks
+      filtered = filtered.filter(todo => {
+        if (focusIds.has(todo.id)) return true;
+        // Check if this todo contains any focus tasks
+        const todoFocusTasks = getFocusTodos([todo]);
+        return todoFocusTasks.length > 0;
+      });
+    }
+    
     return filtered;
-  }, [todos, showCompleted, showOnlyNextActions, nextActions]);
+  }, [todos, showCompleted, showOnlyNextActions, showOnlyFocusTasks, nextActions, focusTodos]);
 
   // Memoized stats (calculate from all todos, not just visible)
   const todoStats = useMemo(() => {
@@ -74,9 +95,10 @@ export function useTodos() {
       visibleCompleted,
       hiddenCount,
       nextActionsCount: nextActions.length,
+      focusTasksCount: focusTodos.length,
       maxDepth: getMaxDepth(todos),
     };
-  }, [todos, visibleTodos, nextActions]);
+  }, [todos, visibleTodos, nextActions, focusTodos]);
 
   // Load todos on mount
   useEffect(() => {
@@ -100,6 +122,14 @@ export function useTodos() {
     const saved = localStorage.getItem('showOnlyNextActions');
     if (saved !== null) {
       setShowOnlyNextActions(JSON.parse(saved));
+    }
+  }, []);
+
+  // Load showOnlyFocusTasks from localStorage after mount
+  useEffect(() => {
+    const saved = localStorage.getItem('showOnlyFocusTasks');
+    if (saved !== null) {
+      setShowOnlyFocusTasks(JSON.parse(saved));
     }
   }, []);
 
@@ -135,6 +165,9 @@ export function useTodos() {
       const idsToCollapse = getParentIdsToCollapse(newTodos, parentIds);
       idsToCollapse.forEach(parentId => collapse(parentId));
     }
+    
+    // Auto-reorder focus priorities if a focus task was completed
+    newTodos = autoReorderFocusPriorities(newTodos);
     
     setTodos(newTodos);
     debouncedSave(newTodos);
@@ -222,6 +255,16 @@ export function useTodos() {
     setShowOnlyNextActions(prev => !prev);
   }, []);
 
+  const toggleShowOnlyFocusTasks = useCallback(() => {
+    setShowOnlyFocusTasks(prev => !prev);
+  }, []);
+
+  const toggleFocusTodoHandler = useCallback((id: number, parentIds?: TodoPath) => {
+    const newTodos = toggleFocusTodo(todos, id, parentIds);
+    setTodos(newTodos);
+    debouncedSave(newTodos);
+  }, [todos, debouncedSave]);
+
   const reorderTodosHandler = useCallback((activeId: number, overId: number, parentIds?: TodoPath) => {
     const newTodos = reorderTodos(todos, activeId, overId, parentIds);
     setTodos(newTodos);
@@ -241,6 +284,13 @@ export function useTodos() {
       localStorage.setItem('showOnlyNextActions', JSON.stringify(showOnlyNextActions));
     }
   }, [showOnlyNextActions]);
+
+  // Save showOnlyFocusTasks to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('showOnlyFocusTasks', JSON.stringify(showOnlyFocusTasks));
+    }
+  }, [showOnlyFocusTasks]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -275,6 +325,10 @@ export function useTodos() {
     toggleShowCompleted,
     showOnlyNextActions,
     toggleShowOnlyNextActions,
+    showOnlyFocusTasks,
+    toggleShowOnlyFocusTasks,
+    toggleFocusTodo: toggleFocusTodoHandler,
+    focusTodos,
     nextActions,
     isNextAction,
     getProjectPath,

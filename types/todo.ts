@@ -4,6 +4,7 @@ export interface BaseTodo {
   completed: boolean;
   createdAt: string;
   completedAt?: string;
+  focusPriority?: number;
   isEditing?: boolean;
 }
 

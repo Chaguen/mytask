@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 ## [1.3.0] - 2025-08-05
 
 ### Added
+- **Focus Tasks Feature (집중할 작업)**: Manual priority management system
+  - Select up to 5 tasks as focus priorities across any hierarchy level
+  - Star button (⭐) to toggle focus status
+  - Numbered badges (1-5) show priority order
+  - "집중할 작업" filter mode to show only focus tasks
+  - Automatic priority reordering when tasks are completed
+  - Path display for nested tasks in focus mode
+  - Yellow star indicator for active focus tasks
+  - localStorage persistence for filter state
+
 - **Completion Time Tracking**: Records and displays when todos are completed
   - Shows completion time below todo text when checked
   - User-friendly relative time format:

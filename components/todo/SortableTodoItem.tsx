@@ -18,9 +18,11 @@ interface SortableTodoItemProps {
   hasNextAction?: boolean;
   projectPath?: string[];
   showProjectPath?: boolean;
+  showFocusPath?: boolean;
   onToggle: (id: number, parentIds?: TodoPath) => void;
   onDelete: (id: number, parentIds?: TodoPath) => void;
   onCopy: (id: number, parentIds?: TodoPath) => void;
+  onToggleFocus?: (id: number, parentIds?: TodoPath) => void;
   onExpand?: (id: number) => void;
   onAddSubtask?: () => void;
   onUpdateText: (id: number, text: string, parentIds?: TodoPath) => void;

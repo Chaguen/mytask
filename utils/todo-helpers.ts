@@ -476,3 +476,84 @@ export function batchUpdateTodos(
   
   return result;
 }
+
+// Get all todos with focus priority
+export function getFocusTodos(todos: Todo[]): Array<{ todo: Todo; path: TodoPath }> {
+  const focusTodos: Array<{ todo: Todo; path: TodoPath }> = [];
+  
+  function traverse(todoList: Todo[], currentPath: TodoPath = []) {
+    for (const todo of todoList) {
+      const path = [...currentPath, todo.id];
+      if (todo.focusPriority !== undefined) {
+        focusTodos.push({ todo, path });
+      }
+      if (todo.subtasks && todo.subtasks.length > 0) {
+        traverse(todo.subtasks, path);
+      }
+    }
+  }
+  
+  traverse(todos);
+  return focusTodos.sort((a, b) => (a.todo.focusPriority || 0) - (b.todo.focusPriority || 0));
+}
+
+// Toggle focus priority for a todo
+export function toggleFocusTodo(
+  todos: Todo[],
+  id: number,
+  parentIds?: TodoPath
+): Todo[] {
+  const path = parentIds ? [...parentIds, id] : [id];
+  const focusTodos = getFocusTodos(todos);
+  
+  // Find if this todo already has focus priority
+  const existingFocus = focusTodos.find(ft => 
+    ft.path[ft.path.length - 1] === id && 
+    ft.path.slice(0, -1).every((pid, idx) => pid === (parentIds || [])[idx])
+  );
+  
+  if (existingFocus) {
+    // Remove focus priority
+    const updatedTodos = updateTodoAtPath(todos, path, (todo) => ({
+      ...todo,
+      focusPriority: undefined,
+    }));
+    // Reorder remaining priorities
+    return autoReorderFocusPriorities(updatedTodos);
+  } else {
+    // Add focus priority
+    if (focusTodos.length >= 5) {
+      console.warn('Maximum 5 focus tasks allowed');
+      return todos;
+    }
+    
+    const newPriority = focusTodos.length + 1;
+    return updateTodoAtPath(todos, path, (todo) => ({
+      ...todo,
+      focusPriority: newPriority,
+    }));
+  }
+}
+
+// Auto reorder focus priorities when one is removed or completed
+export function autoReorderFocusPriorities(todos: Todo[]): Todo[] {
+  const focusTodos = getFocusTodos(todos);
+  let updates: Array<{ path: TodoPath; updates: Partial<Todo> }> = [];
+  
+  // Remove focus priority from completed todos
+  focusTodos.forEach(({ todo, path }) => {
+    if (todo.completed) {
+      updates.push({ path, updates: { focusPriority: undefined } });
+    }
+  });
+  
+  // Get remaining uncompleted focus todos
+  const remainingFocus = focusTodos.filter(({ todo }) => !todo.completed);
+  
+  // Reorder priorities
+  remainingFocus.forEach(({ path }, index) => {
+    updates.push({ path, updates: { focusPriority: index + 1 } });
+  });
+  
+  return batchUpdateTodos(todos, updates);
+}
