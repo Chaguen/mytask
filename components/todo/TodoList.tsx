@@ -8,7 +8,7 @@ import { useTodoContext } from "@/contexts/TodoContext";
 import { TodoPath, MAX_TODO_DEPTH } from "@/types/todo-tree";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Todo } from "@/types/todo";
-import { Eye, EyeOff, Star, Volume2, VolumeX } from "lucide-react";
+import { Eye, EyeOff, Star } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -54,8 +54,6 @@ function TodoListContent() {
     getProjectPath,
     reorderTodos,
     stats,
-    isMuted,
-    toggleMute,
   } = useTodoContext();
 
   const [, setActiveId] = useState<number | null>(null);
@@ -200,15 +198,6 @@ function TodoListContent() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">My Todo List</CardTitle>
             <div className="flex items-center gap-2">
-              <Button
-                variant={isMuted ? "secondary" : "ghost"}
-                size="icon"
-                onClick={toggleMute}
-                className="h-8 w-8"
-                title={isMuted ? '소리 켜기' : '소리 끄기'}
-              >
-                {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-              </Button>
               <Button
                 variant={showOnlyFocusTasks ? "secondary" : "ghost"}
                 size="icon"

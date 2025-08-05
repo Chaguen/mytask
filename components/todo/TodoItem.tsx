@@ -10,7 +10,6 @@ import { EditableTodoText } from "./EditableTodoText";
 import { useTodoStyles, useTodoKeyboardShortcuts } from "@/hooks/useTodoStyles";
 import { formatCompletionTime, getFullDateTime } from "@/utils/date-helpers";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCompletionSound } from "@/hooks/useCompletionSound";
 
 interface TodoItemProps {
   todo: Todo;
@@ -57,7 +56,6 @@ function TodoItemComponent({
   const totalSubtasks = todo.subtasks?.length || 0;
   const [showCelebration, setShowCelebration] = useState(false);
   const [isChecked, setIsChecked] = useState(todo.completed);
-  const { playCompletionSound, playCheckSound } = useCompletionSound();
 
   const styles = useTodoStyles({
     level,
@@ -94,13 +92,9 @@ function TodoItemComponent({
     setIsChecked(newCheckedState);
     
     if (newCheckedState && !hasSubtasks) {
-      // Play completion sound and show celebration for tasks without subtasks
-      playCompletionSound();
+      // Show celebration for tasks without subtasks
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 1500);
-    } else if (newCheckedState) {
-      // Just play check sound for tasks with subtasks
-      playCheckSound();
     }
     
     onToggle(todo.id, parentIds);
