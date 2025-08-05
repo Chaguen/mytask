@@ -51,6 +51,7 @@ function TodoListContent() {
     showOnlyFocusTasks,
     toggleShowOnlyFocusTasks,
     toggleFocusTodo,
+    focusTodos,
     nextActions,
     isNextAction,
     getProjectPath,
@@ -123,7 +124,20 @@ function TodoListContent() {
       // Check if this todo contains any next actions
       return na.path.slice(0, currentPath.length).every((id, idx) => id === currentPath[idx]);
     });
-    const projectPath = (showOnlyNextActions || showOnlyFocusTasks) ? getProjectPath(todos, currentPath) : undefined;
+    
+    // In focus mode, we need to find the original path from the full todos
+    let projectPath = undefined;
+    if (showOnlyNextActions || showOnlyFocusTasks) {
+      if (showOnlyFocusTasks && todo.focusPriority) {
+        // Find the original todo path in the full tree
+        const focusInfo = focusTodos.find(ft => ft.todo.id === todo.id);
+        if (focusInfo) {
+          projectPath = getProjectPath(todos, focusInfo.path);
+        }
+      } else {
+        projectPath = getProjectPath(todos, currentPath);
+      }
+    }
 
     return (
       <SortableTodoItem
@@ -142,8 +156,8 @@ function TodoListContent() {
         onDelete={deleteTodo}
         onCopy={copyTodo}
         onToggleFocus={toggleFocusTodo}
-        onExpand={toggleExpanded}
-        onAddSubtask={() => addSubtask([...parentIds, todo.id])}
+        onExpand={showOnlyFocusTasks ? undefined : toggleExpanded}
+        onAddSubtask={showOnlyFocusTasks ? undefined : () => addSubtask([...parentIds, todo.id])}
         onUpdateText={updateTodoText}
         onSetEditing={setTodoEditing}
         renderSubtask={(parentTodo, newParentIds) => {

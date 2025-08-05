@@ -20,7 +20,8 @@ import {
   toggleFocusTodo,
   getFocusTodos,
   autoReorderFocusPriorities,
-  sortTodosByFocusPriority
+  sortTodosByFocusPriority,
+  extractFocusTasksFlat
 } from '@/utils/todo-helpers';
 import { findTodoByPath } from '@/utils/todo-tree-utils';
 import { DEBOUNCE_DELAY } from '@/constants/todo';
@@ -71,17 +72,8 @@ export function useTodos() {
     
     // Filter by focus tasks
     if (showOnlyFocusTasks) {
-      const focusIds = new Set(focusTodos.map(ft => ft.todo.id));
-      // Include todos that have focus priority or contain focus tasks
-      filtered = filtered.filter(todo => {
-        if (focusIds.has(todo.id)) return true;
-        // Check if this todo contains any focus tasks
-        const todoFocusTasks = getFocusTodos([todo]);
-        return todoFocusTasks.length > 0;
-      });
-      
-      // Sort by focus priority when in focus mode
-      filtered = sortTodosByFocusPriority(filtered);
+      // Extract only focus tasks as a flat list
+      return extractFocusTasksFlat(todos);
     }
     
     return filtered;

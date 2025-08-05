@@ -541,6 +541,31 @@ export function sortTodosByFocusPriority(todos: Todo[]): Todo[] {
   return sortByPriority(todos);
 }
 
+// Extract focus tasks as a flat list sorted by priority
+export function extractFocusTasksFlat(todos: Todo[]): Todo[] {
+  const focusTasks: Todo[] = [];
+  
+  function traverse(todoList: Todo[]) {
+    for (const todo of todoList) {
+      if (todo.focusPriority !== undefined) {
+        // Create a copy without subtasks for flat display
+        focusTasks.push({
+          ...todo,
+          subtasks: undefined // Remove subtasks for flat view
+        });
+      }
+      if (todo.subtasks && todo.subtasks.length > 0) {
+        traverse(todo.subtasks);
+      }
+    }
+  }
+  
+  traverse(todos);
+  
+  // Sort by focus priority
+  return focusTasks.sort((a, b) => (a.focusPriority || 0) - (b.focusPriority || 0));
+}
+
 // Toggle focus priority for a todo
 export function toggleFocusTodo(
   todos: Todo[],
