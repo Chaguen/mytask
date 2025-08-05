@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, Plus, ChevronRight, Copy, Check, Star } from "lucide-react";
@@ -9,6 +9,8 @@ import { TodoPath } from "@/types/todo-tree";
 import { EditableTodoText } from "./EditableTodoText";
 import { useTodoStyles, useTodoKeyboardShortcuts } from "@/hooks/useTodoStyles";
 import { formatCompletionTime, getFullDateTime } from "@/utils/date-helpers";
+import { motion, AnimatePresence } from "framer-motion";
+import { useCompletionSound } from "@/hooks/useCompletionSound";
 
 interface TodoItemProps {
   todo: Todo;
@@ -53,6 +55,9 @@ function TodoItemComponent({
   const hasSubtasks = todo.subtasks && todo.subtasks.length > 0;
   const completedSubtasks = todo.subtasks?.filter(st => st.completed).length || 0;
   const totalSubtasks = todo.subtasks?.length || 0;
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [isChecked, setIsChecked] = useState(todo.completed);
+  const { playCompletionSound, playCheckSound } = useCompletionSound();
 
   const styles = useTodoStyles({
     level,
@@ -80,14 +85,50 @@ function TodoItemComponent({
     }
   };
 
+  useEffect(() => {
+    setIsChecked(todo.completed);
+  }, [todo.completed]);
+
+  const handleCheckboxChange = () => {
+    const newCheckedState = !isChecked;
+    setIsChecked(newCheckedState);
+    
+    if (newCheckedState && !hasSubtasks) {
+      // Play completion sound and show celebration for tasks without subtasks
+      playCompletionSound();
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 1500);
+    } else if (newCheckedState) {
+      // Just play check sound for tasks with subtasks
+      playCheckSound();
+    }
+    
+    onToggle(todo.id, parentIds);
+  };
+
   return (
-    <div className={styles.container.className} onKeyDown={handleKeyDown}>
+    <motion.div 
+      className={styles.container.className} 
+      onKeyDown={handleKeyDown}
+      layout
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      transition={{ duration: 0.2 }}
+    >
       {showProjectPath && projectPath && projectPath.length > 1 && (
         <div className="text-xs text-muted-foreground mb-1 ml-6">
           {projectPath.slice(0, -1).join(' > ')}
         </div>
       )}
-      <div className={styles.todoItem.className}>
+      <motion.div 
+        className={styles.todoItem.className}
+        animate={{
+          scale: showCelebration ? [1, 1.05, 1] : 1,
+          backgroundColor: showCelebration ? ["transparent", "rgba(34, 197, 94, 0.1)", "transparent"] : "transparent"
+        }}
+        transition={{ duration: 0.5 }}
+      >
         {styles.showExpandButton && (
           <Button
             variant="ghost"
@@ -101,11 +142,21 @@ function TodoItemComponent({
         )}
         {styles.showPlaceholder && <div className="w-6" />}
         
-        <Checkbox
-          checked={todo.completed}
-          onCheckedChange={() => onToggle(todo.id, parentIds)}
-          aria-label={`Mark "${todo.text}" as ${todo.completed ? 'incomplete' : 'complete'}`}
-        />
+        <motion.div
+          whileTap={{ scale: 0.9 }}
+          animate={{ 
+            rotate: isChecked ? [0, 360] : 0,
+            scale: isChecked ? [1, 1.2, 1] : 1
+          }}
+          transition={{ duration: 0.3 }}
+        >
+          <Checkbox
+            checked={isChecked}
+            onCheckedChange={handleCheckboxChange}
+            aria-label={`Mark "${todo.text}" as ${todo.completed ? 'incomplete' : 'complete'}`}
+            className="transition-colors duration-200"
+          />
+        </motion.div>
         
         {todo.focusPriority && (
           <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold ml-2">
@@ -113,13 +164,20 @@ function TodoItemComponent({
           </span>
         )}
         
-        <div className={styles.text.className}>
+        <motion.div 
+          className={styles.text.className}
+          animate={{
+            opacity: isChecked ? 0.5 : 1,
+            x: isChecked ? 5 : 0
+          }}
+          transition={{ duration: 0.3 }}
+        >
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <EditableTodoText
                 text={todo.text}
                 isEditing={todo.isEditing || false}
-                isCompleted={todo.completed}
+                isCompleted={isChecked}
                 onTextChange={(newText) => onUpdateText(todo.id, newText, parentIds)}
                 onEditStart={() => onSetEditing(todo.id, true, parentIds)}
                 onEditEnd={() => onSetEditing(todo.id, false, parentIds)}
@@ -147,7 +205,7 @@ function TodoItemComponent({
               ({completedSubtasks}/{totalSubtasks} 완료)
             </span>
           )}
-        </div>
+        </motion.div>
         
         <Button
           variant="ghost"
@@ -190,14 +248,22 @@ function TodoItemComponent({
         >
           <Trash2 className="h-4 w-4" />
         </Button>
-      </div>
+      </motion.div>
       
-      {isExpanded && renderSubtask && todo.subtasks && todo.subtasks.length > 0 && (
-        <div className="ml-6">
-          {renderSubtask(todo, [...parentIds, todo.id])}
-        </div>
-      )}
-    </div>
+      <AnimatePresence>
+        {isExpanded && renderSubtask && todo.subtasks && todo.subtasks.length > 0 && (
+          <motion.div 
+            className="ml-6"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            {renderSubtask(todo, [...parentIds, todo.id])}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 

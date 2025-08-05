@@ -19,7 +19,8 @@ import {
   getFocusTodos,
   autoReorderFocusPriorities,
   sortTodosByFocusPriority,
-  extractFocusTasksFlat
+  extractFocusTasksFlat,
+  getTodayCompletedCount
 } from '@/utils/todo-helpers';
 import { findTodoByPath } from '@/utils/todo-tree-utils';
 import { DEBOUNCE_DELAY } from '@/constants/todo';
@@ -64,6 +65,7 @@ export function useTodos() {
     const totalCompleted = countTodos(todos, (todo) => todo.completed);
     const visibleCompleted = countTodos(visibleTodos, (todo) => todo.completed);
     const hiddenCount = totalCompleted - visibleCompleted;
+    const todayCompleted = getTodayCompletedCount(todos);
     
     return {
       total: countTodos(todos),
@@ -72,6 +74,7 @@ export function useTodos() {
       hiddenCount,
       focusTasksCount: focusTodos.length,
       maxDepth: getMaxDepth(todos),
+      todayCompleted,
     };
   }, [todos, visibleTodos, focusTodos]);
 

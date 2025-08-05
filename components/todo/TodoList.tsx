@@ -4,11 +4,11 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { SortableTodoItem } from "./SortableTodoItem";
 import { TodoInput } from "./TodoInput";
 import { Button } from "@/components/ui/button";
-import { useTodos } from "@/hooks/useTodos";
+import { useTodoContext } from "@/contexts/TodoContext";
 import { TodoPath, MAX_TODO_DEPTH } from "@/types/todo-tree";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Todo } from "@/types/todo";
-import { Eye, EyeOff, Star } from "lucide-react";
+import { Eye, EyeOff, Star, Volume2, VolumeX } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -25,6 +25,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useState } from "react";
+import { CompletionCelebration } from "./CompletionCelebration";
 
 function TodoListContent() {
   const {
@@ -53,9 +54,12 @@ function TodoListContent() {
     getProjectPath,
     reorderTodos,
     stats,
-  } = useTodos();
+    isMuted,
+    toggleMute,
+  } = useTodoContext();
 
   const [, setActiveId] = useState<number | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
   
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -137,7 +141,14 @@ function TodoListContent() {
         projectPath={projectPath}
         showProjectPath={false}
         showFocusPath={showOnlyFocusTasks}
-        onToggle={toggleTodo}
+        onToggle={(id, parentIds) => {
+          toggleTodo(id, parentIds);
+          // Show celebration if a task was completed
+          const todo = todos.find(t => t.id === id);
+          if (todo && !todo.completed && (!todo.subtasks || todo.subtasks.length === 0)) {
+            setShowCelebration(true);
+          }
+        }}
         onDelete={deleteTodo}
         onCopy={copyTodo}
         onToggleFocus={toggleFocusTodo}
@@ -176,6 +187,13 @@ function TodoListContent() {
             <CardTitle className="text-lg">My Todo List</CardTitle>
             <div className="flex items-center gap-2">
               {[
+                {
+                  icon: isMuted ? VolumeX : Volume2,
+                  onClick: toggleMute,
+                  tooltip: isMuted ? '소리 켜기' : '소리 끄기',
+                  active: isMuted,
+                  show: true
+                },
                 {
                   icon: Star,
                   onClick: toggleShowOnlyFocusTasks,
@@ -268,6 +286,10 @@ function TodoListContent() {
         </div>
       </CardContent>
     </Card>
+      <CompletionCelebration 
+        show={showCelebration} 
+        onComplete={() => setShowCelebration(false)} 
+      />
     </DndContext>
   );
 }

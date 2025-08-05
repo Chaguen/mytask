@@ -623,3 +623,30 @@ export function autoReorderFocusPriorities(todos: Todo[]): Todo[] {
   
   return batchUpdateTodos(todos, updates);
 }
+
+// Get count of todos completed today
+export function getTodayCompletedCount(todos: Todo[]): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayTime = today.getTime();
+  
+  let count = 0;
+  
+  function traverse(todoList: Todo[]) {
+    for (const todo of todoList) {
+      if (todo.completed && todo.completedAt) {
+        const completedDate = new Date(todo.completedAt);
+        completedDate.setHours(0, 0, 0, 0);
+        if (completedDate.getTime() === todayTime) {
+          count++;
+        }
+      }
+      if (todo.subtasks && todo.subtasks.length > 0) {
+        traverse(todo.subtasks);
+      }
+    }
+  }
+  
+  traverse(todos);
+  return count;
+}
