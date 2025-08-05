@@ -548,11 +548,8 @@ export function extractFocusTasksFlat(todos: Todo[]): Todo[] {
   function traverse(todoList: Todo[]) {
     for (const todo of todoList) {
       if (todo.focusPriority !== undefined) {
-        // Create a copy without subtasks for flat display
-        focusTasks.push({
-          ...todo,
-          subtasks: undefined // Remove subtasks for flat view
-        });
+        // Keep original reference for proper state updates
+        focusTasks.push(todo);
       }
       if (todo.subtasks && todo.subtasks.length > 0) {
         traverse(todo.subtasks);
