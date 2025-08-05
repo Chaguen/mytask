@@ -19,7 +19,8 @@ import {
   getParentIdsToCollapse,
   toggleFocusTodo,
   getFocusTodos,
-  autoReorderFocusPriorities
+  autoReorderFocusPriorities,
+  sortTodosByFocusPriority
 } from '@/utils/todo-helpers';
 import { findTodoByPath } from '@/utils/todo-tree-utils';
 import { DEBOUNCE_DELAY } from '@/constants/todo';
@@ -78,6 +79,9 @@ export function useTodos() {
         const todoFocusTasks = getFocusTodos([todo]);
         return todoFocusTasks.length > 0;
       });
+      
+      // Sort by focus priority when in focus mode
+      filtered = sortTodosByFocusPriority(filtered);
     }
     
     return filtered;

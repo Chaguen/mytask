@@ -497,6 +497,50 @@ export function getFocusTodos(todos: Todo[]): Array<{ todo: Todo; path: TodoPath
   return focusTodos.sort((a, b) => (a.todo.focusPriority || 0) - (b.todo.focusPriority || 0));
 }
 
+// Sort todos by focus priority (keeping tree structure)
+export function sortTodosByFocusPriority(todos: Todo[]): Todo[] {
+  // Get all todos with their focus priorities
+  const todoMap = new Map<number, number>();
+  
+  function collectPriorities(todoList: Todo[]) {
+    for (const todo of todoList) {
+      if (todo.focusPriority !== undefined) {
+        todoMap.set(todo.id, todo.focusPriority);
+      }
+      if (todo.subtasks && todo.subtasks.length > 0) {
+        collectPriorities(todo.subtasks);
+      }
+    }
+  }
+  
+  collectPriorities(todos);
+  
+  // Sort function that considers focus priority
+  const sortByPriority = (todoList: Todo[]): Todo[] => {
+    return [...todoList].sort((a, b) => {
+      const aPriority = todoMap.get(a.id) ?? Infinity;
+      const bPriority = todoMap.get(b.id) ?? Infinity;
+      
+      // If both have priorities, sort by priority
+      if (aPriority !== Infinity && bPriority !== Infinity) {
+        return aPriority - bPriority;
+      }
+      
+      // If only one has priority, it comes first
+      if (aPriority !== Infinity) return -1;
+      if (bPriority !== Infinity) return 1;
+      
+      // Otherwise maintain original order
+      return 0;
+    }).map(todo => ({
+      ...todo,
+      subtasks: todo.subtasks ? sortByPriority(todo.subtasks) : undefined
+    }));
+  };
+  
+  return sortByPriority(todos);
+}
+
 // Toggle focus priority for a todo
 export function toggleFocusTodo(
   todos: Todo[],
