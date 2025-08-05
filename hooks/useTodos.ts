@@ -27,21 +27,12 @@ import { DEBOUNCE_DELAY } from '@/constants/todo';
 import { getMaxDepth, countTodos } from '@/utils/todo-tree-utils';
 
 export function useTodos() {
-  console.log('[useTodos] Starting hook');
-  
-  console.log('[useTodos] Calling useState for todos');
   const [todos, setTodos] = useState<Todo[]>([]);
-  console.log('[useTodos] Calling useState for inputValue');
   const [inputValue, setInputValue] = useState('');
-  console.log('[useTodos] Calling useState for subtaskInputs');
   const [subtaskInputs, setSubtaskInputs] = useState<{ [key: number]: string }>({});
-  console.log('[useTodos] Calling useState for showCompleted');
   const [showCompleted, setShowCompleted] = useState<boolean>(true);
-  console.log('[useTodos] Calling useState for showOnlyFocusTasks');
   const [showOnlyFocusTasks, setShowOnlyFocusTasks] = useState<boolean>(false);
-  console.log('[useTodos] Calling useTodoAPI');
   const { loading, error, loadTodos, saveTodos } = useTodoAPI();
-  console.log('[useTodos] Calling useExpandedState');
   const { expandedTodos, toggleExpanded, expand, collapse, isExpanded } = useExpandedState();
   
   const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);

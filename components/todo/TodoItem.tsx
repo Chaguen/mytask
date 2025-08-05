@@ -49,12 +49,8 @@ function TodoItemComponent({
   onSetEditing,
   renderSubtask,
 }: TodoItemProps) {
-  console.log('[TodoItem] Rendering:', { todoId: todo.id, level, parentIds });
-  
   // All hooks must be called unconditionally at the top
-  console.log('[TodoItem] Calling useState for showCelebration');
   const [showCelebration, setShowCelebration] = useState(false);
-  console.log('[TodoItem] Calling useState for isChecked');
   const [isChecked, setIsChecked] = useState(todo.completed);
   
   // Computed values after hooks
@@ -62,7 +58,6 @@ function TodoItemComponent({
   const completedSubtasks = todo.subtasks?.filter(st => st.completed).length || 0;
   const totalSubtasks = todo.subtasks?.length || 0;
 
-  console.log('[TodoItem] Calling useTodoStyles');
   const styles = useTodoStyles({
     level,
     isCompleted: todo.completed,
@@ -70,7 +65,6 @@ function TodoItemComponent({
     isExpanded,
   });
 
-  console.log('[TodoItem] Calling useTodoKeyboardShortcuts');
   const { handleKeyDown } = useTodoKeyboardShortcuts({
     onAddTodo: onAddSubtask,
     onToggleExpand: onExpand ? () => onExpand(todo.id) : undefined,
@@ -89,9 +83,7 @@ function TodoItemComponent({
     }
   };
 
-  console.log('[TodoItem] Calling useEffect');
   useEffect(() => {
-    console.log('[TodoItem] useEffect running for todo.completed:', todo.completed);
     setIsChecked(todo.completed);
   }, [todo.completed]);
 

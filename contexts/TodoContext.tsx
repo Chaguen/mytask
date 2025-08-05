@@ -47,10 +47,7 @@ interface TodoContextType {
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
 
 export function TodoProvider({ children }: { children: React.ReactNode }) {
-  console.log('[TodoProvider] Starting render');
-  console.log('[TodoProvider] Calling useTodos');
   const todoData = useTodos();
-  console.log('[TodoProvider] useTodos completed');
 
   return (
     <TodoContext.Provider value={todoData}>

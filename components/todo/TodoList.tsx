@@ -28,9 +28,6 @@ import { useState, useCallback } from "react";
 import { CompletionCelebration } from "./CompletionCelebration";
 
 function TodoListContent() {
-  console.log('[TodoListContent] Starting render');
-  
-  console.log('[TodoListContent] Calling useTodoContext');
   const {
     todos,
     visibleTodos,
@@ -59,19 +56,15 @@ function TodoListContent() {
     stats,
   } = useTodoContext();
 
-  console.log('[TodoListContent] Calling useState for activeId');
   const [activeId, setActiveId] = useState<number | null>(null);
-  console.log('[TodoListContent] Calling useState for showCelebration');
   const [showCelebration, setShowCelebration] = useState(false);
   
-  console.log('[TodoListContent] Calling useSensors');
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-  console.log('[TodoListContent] useSensors completed');
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as number);
@@ -98,7 +91,6 @@ function TodoListContent() {
   };
 
   // IMPORTANT: All hooks must be called before any conditional returns
-  console.log('[TodoListContent] Calling useCallback for renderTodo');
   const renderTodo = useCallback((todo: Todo, level: number = 0, parentIds: TodoPath = [], parentTodo?: Todo) => {
     // Prevent rendering beyond max depth
     if (level >= MAX_TODO_DEPTH) {
@@ -176,7 +168,6 @@ function TodoListContent() {
 
   // Check loading and error states after all hooks are called
   if (loading) {
-    console.log('[TodoListContent] Returning loading state');
     return (
       <Card className="w-full max-w-2xl">
         <CardContent className="py-8 text-center text-muted-foreground">
@@ -187,7 +178,6 @@ function TodoListContent() {
   }
 
   if (error) {
-    console.log('[TodoListContent] Returning error state');
     return (
       <Card className="w-full max-w-2xl">
         <CardContent className="py-8 text-center text-destructive">
@@ -197,7 +187,6 @@ function TodoListContent() {
     );
   }
 
-  console.log('[TodoListContent] Rendering main content');
   return (
     <DndContext 
       sensors={sensors}
