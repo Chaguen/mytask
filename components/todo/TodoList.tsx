@@ -24,7 +24,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { CompletionCelebration } from "./CompletionCelebration";
 
 function TodoListContent() {
@@ -112,7 +112,7 @@ function TodoListContent() {
     );
   }
 
-  const renderTodo = (todo: Todo, level: number = 0, parentIds: TodoPath = [], parentTodo?: Todo) => {
+  const renderTodo = useCallback((todo: Todo, level: number = 0, parentIds: TodoPath = [], parentTodo?: Todo) => {
     // Prevent rendering beyond max depth
     if (level >= MAX_TODO_DEPTH) {
       return null;
@@ -171,7 +171,21 @@ function TodoListContent() {
         }}
       />
     );
-  };
+  }, [
+    todos,
+    showOnlyFocusTasks,
+    focusTodos,
+    getProjectPath,
+    isExpanded,
+    toggleTodo,
+    deleteTodo,
+    copyTodo,
+    toggleFocusTodo,
+    toggleExpanded,
+    addSubtask,
+    updateTodoText,
+    setTodoEditing,
+  ]);
 
   return (
     <DndContext 
@@ -186,40 +200,33 @@ function TodoListContent() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">My Todo List</CardTitle>
             <div className="flex items-center gap-2">
-              {[
-                {
-                  icon: isMuted ? VolumeX : Volume2,
-                  onClick: toggleMute,
-                  tooltip: isMuted ? '소리 켜기' : '소리 끄기',
-                  active: isMuted,
-                  show: true
-                },
-                {
-                  icon: Star,
-                  onClick: toggleShowOnlyFocusTasks,
-                  tooltip: showOnlyFocusTasks ? '전체 보기' : '집중할 작업만 보기',
-                  active: showOnlyFocusTasks,
-                  show: true
-                },
-                {
-                  icon: showCompleted ? EyeOff : Eye,
-                  onClick: toggleShowCompleted,
-                  tooltip: showCompleted ? '완료 항목 숨기기' : '완료 항목 보기',
-                  active: false,
-                  show: true
-                }
-              ].map((btn, idx) => btn.show && (
-                <Button
-                  key={idx}
-                  variant={btn.active ? "secondary" : "ghost"}
-                  size="icon"
-                  onClick={btn.onClick}
-                  className="h-8 w-8"
-                  title={btn.tooltip}
-                >
-                  <btn.icon className="h-4 w-4" />
-                </Button>
-              ))}
+              <Button
+                variant={isMuted ? "secondary" : "ghost"}
+                size="icon"
+                onClick={toggleMute}
+                className="h-8 w-8"
+                title={isMuted ? '소리 켜기' : '소리 끄기'}
+              >
+                {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant={showOnlyFocusTasks ? "secondary" : "ghost"}
+                size="icon"
+                onClick={toggleShowOnlyFocusTasks}
+                className="h-8 w-8"
+                title={showOnlyFocusTasks ? '전체 보기' : '집중할 작업만 보기'}
+              >
+                <Star className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleShowCompleted}
+                className="h-8 w-8"
+                title={showCompleted ? '완료 항목 숨기기' : '완료 항목 보기'}
+              >
+                {showCompleted ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
               {stats.completed > 0 && (
                 <Button
                   variant="ghost"
