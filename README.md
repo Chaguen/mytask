@@ -1,105 +1,206 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# Todo List Application
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
-
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+A modern, feature-rich todo list application built with Next.js, TypeScript, and Tailwind CSS.
 
 ## Features
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Middleware
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+- ✅ Create, complete, and delete todos
+- 📝 Multi-level subtasks (up to 5 levels deep)
+- ⏰ Real-time clock display
+- 💾 Local file-based storage (JSON)
+- 🎨 Modern UI with shadcn/ui components
+- 🌙 Dark mode support
+- ⚡ GTD Next Actions - Automatically identifies actionable tasks
+- 👁️ Show/Hide completed items toggle
+- 📋 Copy todos with all subtasks
+- 🛡️ Data validation with Zod
+- 🔄 Auto-complete parent todos when all subtasks are done
+- 📊 Todo statistics with next actions count
+- 🗑️ Bulk delete completed todos
+- ⌨️ Keyboard shortcuts support
+- 🚨 Error boundaries for robust error handling
+- 💪 Performance optimized with React.memo and debouncing
 
-## Demo
+## Tech Stack
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+- **Framework**: Next.js 14+ with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **UI Components**: shadcn/ui
+- **Validation**: Zod
+- **Icons**: Lucide React
 
-## Deploy to Vercel
+## Getting Started
 
-Vercel deployment will guide you through creating a Supabase account and project.
+### Prerequisites
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+- Node.js 18+ 
+- npm or yarn
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+### Installation
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+1. Clone the repository
+```bash
+git clone <repository-url>
+cd my-app
+```
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+2. Install dependencies
+```bash
+npm install
+```
 
-## Clone and run locally
+3. Run the development server
+```bash
+npm run dev
+```
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-2. Create a Next.js app using the Supabase Starter template npx command
+## Project Structure
 
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
+```
+app/
+├── api/
+│   └── todos/
+│       └── route.ts      # API endpoints for todo operations
+├── page.tsx              # Main page component
+├── layout.tsx            # Root layout
+└── globals.css           # Global styles
 
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
+components/
+├── todo/
+│   ├── TodoList.tsx      # Main todo list container with stats
+│   ├── TodoItem.tsx      # Memoized todo item component
+│   └── TodoInput.tsx     # Reusable input component
+├── CurrentTime.tsx       # Clock display component
+├── ErrorBoundary.tsx     # Error handling component
+└── ui/                   # shadcn/ui components
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
+hooks/
+├── useTodos.ts          # Main todo state management
+├── useTodoAPI.ts        # API communication hook
+├── useExpandedState.ts  # Expand/collapse state management
+└── useTodoStyles.ts     # Styling and keyboard shortcuts
 
-3. Use `cd` to change into the app's directory
+lib/
+├── api-client.ts        # API client class
+└── schemas.ts           # Zod validation schemas
 
-   ```bash
-   cd with-supabase-app
-   ```
+utils/
+├── todo-helpers.ts      # Todo CRUD operations
+├── todo-tree-utils.ts   # Tree traversal utilities
+└── date-helpers.ts      # Date formatting utilities
 
-4. Rename `.env.example` to `.env.local` and update the following:
+constants/
+└── todo.ts              # Application constants
 
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=[INSERT SUPABASE PROJECT API ANON KEY]
-   ```
+types/
+├── todo.ts              # Base todo types
+└── todo-tree.ts         # Tree-specific types
+```
 
-   Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
+## Features in Detail
 
-5. You can now run the Next.js local development server:
+### Todo Management
+- Add new todos with Enter key or button click
+- Toggle completion status with checkbox
+- Delete todos with trash icon
+- Automatic parent todo completion when all subtasks are done
+- Bulk delete all completed todos
+- Real-time statistics display
 
-   ```bash
-   npm run dev
-   ```
+### Multi-Level Subtasks
+- Add subtasks to any todo item (up to 5 levels deep)
+- Each subtask can have its own subtasks
+- Expand/collapse subtask views at any level
+- Progress tracking (e.g., "2/5 완료")
+- Smart completion logic:
+  - Completing a parent completes all children
+  - Parent auto-completes when all children are done
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+### Keyboard Shortcuts
+- `Enter` - Add new todo/subtask
+- `Ctrl/Cmd + Enter` - Add subtask (when todo is focused)
+- `Space` - Toggle expand/collapse (when not in input)
+- `Delete` - Delete todo (when not in input)
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+### Data Persistence
+- Todos are saved to `todos.json` in the project root
+- Automatic backup creation before saves
+- Data validation with Zod schemas
+- Debounced saves (500ms) for performance
+- Error recovery with backup files
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+### GTD Next Actions (⚡)
+- Automatically identifies the next actionable task in each project
+- Visual indicators:
+  - ⚡ Yellow icon = This is a next action
+  - Small ⚡ = This project contains next actions
+- "Next Actions Only" filter mode
+- Shows project path in filtered view
+- Follows GTD methodology principles
 
-## Feedback and issues
+### Additional Features
+- **Copy Todos**: Duplicate any todo with all its subtasks
+- **Show/Hide Completed**: Toggle visibility of completed items
+- **Smart Filtering**: Combine filters for focused work sessions
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
+## Scripts
 
-## More Supabase examples
+```bash
+npm run dev      # Start development server
+npm run build    # Build for production
+npm run start    # Start production server
+npm run lint     # Run ESLint
+```
 
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+## Configuration
+
+Key configuration files:
+- `constants/todo.ts` - Application constants
+- `tailwind.config.ts` - Tailwind CSS configuration
+- `components.json` - shadcn/ui configuration
+
+## Data Format
+
+Todos are stored in JSON format with recursive structure:
+```json
+[
+  {
+    "id": 1234567890,
+    "text": "Main todo",
+    "completed": false,
+    "createdAt": "2025-01-24T12:00:00.000Z",
+    "subtasks": [
+      {
+        "id": 1234567891,
+        "text": "Subtask level 1",
+        "completed": false,
+        "createdAt": "2025-01-24T12:01:00.000Z",
+        "subtasks": [
+          {
+            "id": 1234567892,
+            "text": "Subtask level 2",
+            "completed": true,
+            "createdAt": "2025-01-24T12:02:00.000Z",
+            "subtasks": []
+          }
+        ]
+      }
+    ]
+  }
+]
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License.

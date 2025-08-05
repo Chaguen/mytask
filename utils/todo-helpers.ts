@@ -1,0 +1,449 @@
+import { Todo } from '@/types/todo';
+import { TodoPath, MAX_TODO_DEPTH } from '@/types/todo-tree';
+import { updateTodoAtPath, isValidPath, wouldCreateCircularReference, findTodoByPath } from './todo-tree-utils';
+
+export function createTodo(text: string, isEditing?: boolean): Todo {
+  return {
+    id: Date.now(),
+    text: text.trim(),
+    completed: false,
+    createdAt: new Date().toISOString(),
+    subtasks: [],
+    isEditing: isEditing,
+  };
+}
+
+export function toggleTodoCompletion(
+  todos: Todo[],
+  id: number,
+  parentIds?: TodoPath
+): Todo[] {
+  const path = parentIds ? [...parentIds, id] : [id];
+  
+  // Validate path - skip validation for empty arrays (top-level todos)
+  if (parentIds && parentIds.length > 0 && !isValidPath(todos, parentIds)) {
+    console.error('Invalid parent path:', parentIds);
+    return todos;
+  }
+  
+  return updateTodoAtPath(todos, path, (todo) => {
+    const newCompleted = !todo.completed;
+    return {
+      ...todo,
+      completed: newCompleted,
+      completedAt: newCompleted ? new Date().toISOString() : undefined,
+      subtasks: setAllSubtasksCompleted(todo.subtasks, newCompleted),
+    };
+  });
+}
+
+export function deleteTodoFromList(
+  todos: Todo[],
+  id: number,
+  parentIds?: TodoPath
+): Todo[] {
+  if (!parentIds || parentIds.length === 0) {
+    // Delete top-level todo
+    return todos.filter((todo) => todo.id !== id);
+  }
+  
+  // Validate path
+  if (!isValidPath(todos, parentIds)) {
+    console.error('Invalid parent path:', parentIds);
+    return todos;
+  }
+  
+  return updateTodoAtPath(todos, parentIds, (parentTodo) => ({
+    ...parentTodo,
+    subtasks: parentTodo.subtasks?.filter((st) => st.id !== id),
+  }));
+}
+
+export function addSubtaskToTodo(
+  todos: Todo[],
+  parentIds: TodoPath,
+  subtaskText: string,
+  startEditing: boolean = false
+): Todo[] {
+  // Validate inputs
+  if (!parentIds || parentIds.length === 0) {
+    console.error('Parent IDs required for adding subtask');
+    return todos;
+  }
+  
+  if (parentIds.length >= MAX_TODO_DEPTH) {
+    console.error(`Maximum nesting depth (${MAX_TODO_DEPTH}) reached`);
+    return todos;
+  }
+  
+  if (!isValidPath(todos, parentIds)) {
+    console.error('Invalid parent path:', parentIds);
+    return todos;
+  }
+  
+  const newSubtask = createTodo(subtaskText, startEditing);
+  
+  return updateTodoAtPath(todos, parentIds, (parentTodo) => {
+    const updatedSubtasks = [...(parentTodo.subtasks || []), newSubtask];
+    
+    // Auto-uncomplete parent if it was marked as complete
+    const shouldUpdateCompletion = parentTodo.completed && updatedSubtasks.length > 0;
+    
+    return {
+      ...parentTodo,
+      subtasks: updatedSubtasks,
+      completed: shouldUpdateCompletion ? false : parentTodo.completed,
+    };
+  });
+}
+
+export function checkAllSubtasksCompleted(subtasks: Todo[] | undefined): boolean {
+  if (!subtasks || subtasks.length === 0) return false;
+  
+  return subtasks.every((subtask) => {
+    if (subtask.subtasks && subtask.subtasks.length > 0) {
+      return subtask.completed && checkAllSubtasksCompleted(subtask.subtasks);
+    }
+    return subtask.completed;
+  });
+}
+
+function setAllSubtasksCompleted(
+  subtasks: Todo[] | undefined,
+  completed: boolean
+): Todo[] | undefined {
+  if (!subtasks) return undefined;
+  
+  const completedAt = completed ? new Date().toISOString() : undefined;
+  
+  return subtasks.map(subtask => ({
+    ...subtask,
+    completed,
+    completedAt,
+    subtasks: setAllSubtasksCompleted(subtask.subtasks, completed),
+  }));
+}
+
+// Update parent completion status based on subtasks
+export function updateParentCompletion(
+  todos: Todo[],
+  childPath: TodoPath
+): Todo[] {
+  if (childPath.length === 0) return todos;
+  
+  // If childPath has only one element, it's a top-level todo - no parent to update
+  if (childPath.length === 1) return todos;
+  
+  const parentPath = childPath.slice(0, -1);
+  
+  // Recursively update all parents
+  let updatedTodos = updateTodoAtPath(todos, parentPath, (parentTodo) => {
+    const allCompleted = checkAllSubtasksCompleted(parentTodo.subtasks);
+    
+    if (parentTodo.completed !== allCompleted) {
+      return { 
+        ...parentTodo, 
+        completed: allCompleted,
+        completedAt: allCompleted ? new Date().toISOString() : undefined
+      };
+    }
+    
+    return parentTodo;
+  });
+  
+  // Continue updating parent's parent if needed
+  if (parentPath.length > 1) {
+    updatedTodos = updateParentCompletion(updatedTodos, parentPath);
+  }
+  
+  return updatedTodos;
+}
+
+// Update todo text
+export function updateTodoText(
+  todos: Todo[],
+  id: number,
+  newText: string,
+  parentIds?: TodoPath
+): Todo[] {
+  const path = parentIds ? [...parentIds, id] : [id];
+  
+  // Validate path - skip validation for empty arrays (top-level todos)
+  if (parentIds && parentIds.length > 0 && !isValidPath(todos, parentIds)) {
+    console.error('Invalid parent path:', parentIds);
+    return todos;
+  }
+  
+  return updateTodoAtPath(todos, path, (todo) => ({
+    ...todo,
+    text: newText.trim(),
+    // Don't change isEditing here - let it be handled separately
+  }));
+}
+
+// Set todo editing state
+export function setTodoEditing(
+  todos: Todo[],
+  id: number,
+  isEditing: boolean,
+  parentIds?: TodoPath
+): Todo[] {
+  const path = parentIds ? [...parentIds, id] : [id];
+  
+  // Validate path - skip validation for empty arrays (top-level todos)
+  if (parentIds && parentIds.length > 0 && !isValidPath(todos, parentIds)) {
+    console.error('Invalid parent path:', parentIds);
+    return todos;
+  }
+  
+  return updateTodoAtPath(todos, path, (todo) => ({
+    ...todo,
+    isEditing,
+  }));
+}
+
+// Copy a todo and all its subtasks
+export function copyTodoWithSubtasks(todo: Todo): Todo {
+  const newTodo: Todo = {
+    id: Date.now() + Math.random(), // Ensure unique ID
+    text: todo.text,
+    completed: false, // Always set to unchecked
+    createdAt: new Date().toISOString(),
+    completedAt: undefined, // Reset completion time
+    isEditing: false,
+  };
+
+  // Recursively copy subtasks if they exist
+  if (todo.subtasks && todo.subtasks.length > 0) {
+    newTodo.subtasks = todo.subtasks.map(subtask => copyTodoWithSubtasks(subtask));
+  }
+
+  return newTodo;
+}
+
+// Copy todo at specific position in the tree
+export function copyTodoInList(
+  todos: Todo[],
+  id: number,
+  parentIds?: TodoPath
+): Todo[] {
+  if (!parentIds || parentIds.length === 0) {
+    // Copy top-level todo
+    const todoIndex = todos.findIndex(t => t.id === id);
+    if (todoIndex === -1) {
+      console.error('Todo not found:', id);
+      return todos;
+    }
+    
+    const originalTodo = todos[todoIndex];
+    const copiedTodo = copyTodoWithSubtasks(originalTodo);
+    
+    // Insert the copy right after the original
+    const newTodos = [...todos];
+    newTodos.splice(todoIndex + 1, 0, copiedTodo);
+    return newTodos;
+  }
+  
+  // Copy subtask
+  if (!isValidPath(todos, parentIds)) {
+    console.error('Invalid parent path:', parentIds);
+    return todos;
+  }
+  
+  return updateTodoAtPath(todos, parentIds, (parentTodo) => {
+    const subtaskIndex = parentTodo.subtasks?.findIndex(st => st.id === id) ?? -1;
+    if (subtaskIndex === -1) {
+      console.error('Subtask not found:', id);
+      return parentTodo;
+    }
+    
+    const originalSubtask = parentTodo.subtasks![subtaskIndex];
+    const copiedSubtask = copyTodoWithSubtasks(originalSubtask);
+    
+    // Insert the copy right after the original
+    const newSubtasks = [...(parentTodo.subtasks || [])];
+    newSubtasks.splice(subtaskIndex + 1, 0, copiedSubtask);
+    
+    return {
+      ...parentTodo,
+      subtasks: newSubtasks,
+    };
+  });
+}
+
+// Get the next action for a todo with subtasks
+export function getNextActionForTodo(todo: Todo): Todo | null {
+  if (!todo.subtasks || todo.subtasks.length === 0 || todo.completed) {
+    return null;
+  }
+  
+  // Find the first incomplete subtask
+  for (const subtask of todo.subtasks) {
+    if (!subtask.completed) {
+      // If this subtask has its own subtasks, recurse
+      if (subtask.subtasks && subtask.subtasks.length > 0) {
+        const nextAction = getNextActionForTodo(subtask);
+        return nextAction || subtask;
+      }
+      return subtask;
+    }
+  }
+  
+  return null;
+}
+
+// Check if a todo is a next action
+export function isNextAction(
+  todo: Todo,
+  parentTodo?: Todo,
+  parentIds?: TodoPath,
+  allTodos?: Todo[]
+): boolean {
+  // If it's completed, it's not a next action
+  if (todo.completed) return false;
+  
+  // If it has uncompleted subtasks, it's not a next action (the subtask is)
+  if (todo.subtasks && todo.subtasks.some(st => !st.completed)) return false;
+  
+  // If no parent is provided, check if it's a top-level next action
+  if (!parentTodo) {
+    // Top-level todos without subtasks are next actions
+    return !todo.subtasks || todo.subtasks.length === 0;
+  }
+  
+  // Check if this is the first incomplete subtask of its parent
+  const firstIncomplete = parentTodo.subtasks?.find(st => !st.completed);
+  return firstIncomplete?.id === todo.id;
+}
+
+// Get all next actions from the todo tree
+export function getAllNextActions(
+  todos: Todo[],
+  parentIds: TodoPath = [],
+  parentTodo?: Todo
+): Array<{ todo: Todo; path: TodoPath; parentTodo?: Todo }> {
+  const nextActions: Array<{ todo: Todo; path: TodoPath; parentTodo?: Todo }> = [];
+  
+  for (const todo of todos) {
+    const currentPath = [...parentIds, todo.id];
+    
+    if (isNextAction(todo, parentTodo)) {
+      nextActions.push({ todo, path: currentPath, parentTodo });
+    }
+    
+    // Recurse into subtasks
+    if (todo.subtasks && todo.subtasks.length > 0 && !todo.completed) {
+      const subtaskNextActions = getAllNextActions(todo.subtasks, currentPath, todo);
+      nextActions.push(...subtaskNextActions);
+    }
+  }
+  
+  return nextActions;
+}
+
+// Get project path as string array
+export function getProjectPath(
+  todos: Todo[],
+  path: TodoPath
+): string[] {
+  const pathNames: string[] = [];
+  let currentTodos = todos;
+  
+  for (const id of path) {
+    const todo = currentTodos.find(t => t.id === id);
+    if (todo) {
+      pathNames.push(todo.text);
+      currentTodos = todo.subtasks || [];
+    }
+  }
+  
+  return pathNames;
+}
+
+// Reorder todos at the same level
+export function reorderTodos(
+  todos: Todo[],
+  activeId: number,
+  overId: number,
+  parentIds?: TodoPath
+): Todo[] {
+  if (activeId === overId) return todos;
+
+  // Helper function to reorder items in an array
+  const reorderArray = (items: Todo[]): Todo[] => {
+    const activeIndex = items.findIndex(item => item.id === activeId);
+    const overIndex = items.findIndex(item => item.id === overId);
+    
+    if (activeIndex === -1 || overIndex === -1) return items;
+    
+    const newItems = [...items];
+    const [movedItem] = newItems.splice(activeIndex, 1);
+    newItems.splice(overIndex, 0, movedItem);
+    
+    return newItems;
+  };
+
+  // If no parent IDs, reorder at root level
+  if (!parentIds || parentIds.length === 0) {
+    return reorderArray(todos);
+  }
+
+  // Otherwise, reorder within the parent
+  return updateTodoAtPath(todos, parentIds, (parentTodo) => ({
+    ...parentTodo,
+    subtasks: reorderArray(parentTodo.subtasks || []),
+  }));
+}
+
+// Get siblings of a todo (todos at the same level)
+export function getSiblings(
+  todos: Todo[],
+  todoId: number,
+  parentIds?: TodoPath
+): Todo[] {
+  if (!parentIds || parentIds.length === 0) {
+    return todos;
+  }
+
+  const result = findTodoByPath(todos, parentIds);
+  if (result.found && result.value?.subtasks) {
+    return result.value.subtasks;
+  }
+
+  return [];
+}
+
+// Check if two todos are siblings (at the same level)
+export function areSiblings(
+  todos: Todo[],
+  id1: number,
+  id2: number,
+  parentIds1?: TodoPath,
+  parentIds2?: TodoPath
+): boolean {
+  // Compare parent paths
+  const path1 = parentIds1 || [];
+  const path2 = parentIds2 || [];
+  
+  if (path1.length !== path2.length) return false;
+  
+  // Check if all parent IDs match
+  return path1.every((id, index) => id === path2[index]);
+}
+
+// Batch update multiple todos
+export function batchUpdateTodos(
+  todos: Todo[],
+  updates: Array<{ path: TodoPath; updates: Partial<Todo> }>
+): Todo[] {
+  let result = todos;
+  
+  for (const update of updates) {
+    result = updateTodoAtPath(result, update.path, (todo) => ({
+      ...todo,
+      ...update.updates,
+    }));
+  }
+  
+  return result;
+}
