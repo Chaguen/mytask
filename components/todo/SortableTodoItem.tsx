@@ -14,6 +14,7 @@ interface SortableTodoItemProps {
   parentIds?: TodoPath;
   parentTodo?: Todo;
   isExpanded?: boolean;
+  isInFocusMode?: boolean;
   isNextAction?: boolean;
   hasNextAction?: boolean;
   projectPath?: string[];

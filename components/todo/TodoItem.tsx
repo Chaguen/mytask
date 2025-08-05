@@ -17,6 +17,7 @@ interface TodoItemProps {
   parentIds?: TodoPath;
   parentTodo?: Todo;
   isExpanded?: boolean;
+  isInFocusMode?: boolean;
   projectPath?: string[];
   showProjectPath?: boolean;
   showFocusPath?: boolean;
@@ -36,6 +37,7 @@ function TodoItemComponent({
   level = 0,
   parentIds = [],
   isExpanded = false,
+  isInFocusMode = false,
   projectPath,
   showProjectPath = false,
   showFocusPath = false,
@@ -100,9 +102,20 @@ function TodoItemComponent({
     onToggle(todo.id, parentIds);
   };
 
+  // Determine focus mode styling
+  const getFocusModeStyle = () => {
+    if (!isInFocusMode) return '';
+    if (todo.focusPriority !== undefined) {
+      // Directly selected for focus (darker background)
+      return 'bg-yellow-50 dark:bg-yellow-950/30 border-l-4 border-yellow-400';
+    }
+    // Auto-included subtask (lighter background)
+    return 'bg-yellow-50/50 dark:bg-yellow-950/15';
+  };
+
   return (
     <motion.div 
-      className={styles.container.className} 
+      className={`${styles.container.className} ${getFocusModeStyle()}`} 
       onKeyDown={handleKeyDown}
       layout
       initial={{ opacity: 0, x: -20 }}

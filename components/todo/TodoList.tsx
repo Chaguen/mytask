@@ -117,6 +117,7 @@ function TodoListContent() {
         parentIds={parentIds}
         parentTodo={parentTodo}
         isExpanded={isExpanded(todo.id)}
+        isInFocusMode={showOnlyFocusTasks}
         projectPath={projectPath}
         showProjectPath={false}
         showFocusPath={showOnlyFocusTasks}
@@ -131,8 +132,8 @@ function TodoListContent() {
         onDelete={deleteTodo}
         onCopy={copyTodo}
         onToggleFocus={toggleFocusTodo}
-        onExpand={showOnlyFocusTasks ? undefined : toggleExpanded}
-        onAddSubtask={showOnlyFocusTasks ? undefined : () => addSubtask([...parentIds, todo.id])}
+        onExpand={toggleExpanded}
+        onAddSubtask={() => addSubtask([...parentIds, todo.id])}
         onUpdateText={updateTodoText}
         onSetEditing={setTodoEditing}
         renderSubtask={(parentTodo, newParentIds) => {

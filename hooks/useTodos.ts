@@ -20,6 +20,7 @@ import {
   autoReorderFocusPriorities,
   sortTodosByFocusPriority,
   extractFocusTasksFlat,
+  extractFocusTasksWithSubtasks,
   getTodayCompletedCount
 } from '@/utils/todo-helpers';
 import { findTodoByPath } from '@/utils/todo-tree-utils';
@@ -53,8 +54,8 @@ export function useTodos() {
     
     // Filter by focus tasks
     if (showOnlyFocusTasks) {
-      // Extract only focus tasks as a flat list
-      return extractFocusTasksFlat(todos);
+      // Extract focus tasks with their full subtree (hierarchical)
+      return extractFocusTasksWithSubtasks(todos);
     }
     
     return filtered;
