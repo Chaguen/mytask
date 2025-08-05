@@ -3,7 +3,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, ChevronRight, Copy, Zap, Check, Star } from "lucide-react";
+import { Trash2, Plus, ChevronRight, Copy, Check, Star } from "lucide-react";
 import { Todo } from "@/types/todo";
 import { TodoPath } from "@/types/todo-tree";
 import { EditableTodoText } from "./EditableTodoText";
@@ -16,8 +16,6 @@ interface TodoItemProps {
   parentIds?: TodoPath;
   parentTodo?: Todo;
   isExpanded?: boolean;
-  isNextAction?: boolean;
-  hasNextAction?: boolean;
   projectPath?: string[];
   showProjectPath?: boolean;
   showFocusPath?: boolean;
@@ -89,7 +87,7 @@ function TodoItemComponent({
           {projectPath.slice(0, -1).join(' > ')}
         </div>
       )}
-      <div className={`${styles.todoItem.className} ${isNextAction ? 'ring-2 ring-yellow-400 ring-opacity-50' : ''}`}>
+      <div className={styles.todoItem.className}>
         {styles.showExpandButton && (
           <Button
             variant="ghost"
@@ -109,16 +107,15 @@ function TodoItemComponent({
           aria-label={`Mark "${todo.text}" as ${todo.completed ? 'incomplete' : 'complete'}`}
         />
         
+        {todo.focusPriority && (
+          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold ml-2">
+            {todo.focusPriority}
+          </span>
+        )}
+        
         <div className={styles.text.className}>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              {todo.focusPriority && (
-                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                  {todo.focusPriority}
-                </span>
-              )}
-              {isNextAction && <Zap className="h-4 w-4 text-yellow-500" />}
-              {hasNextAction && !isNextAction && <Zap className="h-3 w-3 text-yellow-500 opacity-50" />}
               <EditableTodoText
                 text={todo.text}
                 isEditing={todo.isEditing || false}

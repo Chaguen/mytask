@@ -8,7 +8,7 @@ import { useTodos } from "@/hooks/useTodos";
 import { TodoPath, MAX_TODO_DEPTH } from "@/types/todo-tree";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Todo } from "@/types/todo";
-import { Eye, EyeOff, Zap, Star } from "lucide-react";
+import { Eye, EyeOff, Star } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -46,14 +46,10 @@ function TodoListContent() {
     copyTodo,
     showCompleted,
     toggleShowCompleted,
-    showOnlyNextActions,
-    toggleShowOnlyNextActions,
     showOnlyFocusTasks,
     toggleShowOnlyFocusTasks,
     toggleFocusTodo,
     focusTodos,
-    nextActions,
-    isNextAction,
     getProjectPath,
     reorderTodos,
     stats,
@@ -119,23 +115,14 @@ function TodoListContent() {
     }
 
     const currentPath = [...parentIds, todo.id];
-    const isNA = isNextAction(todo, parentTodo);
-    const hasNA = nextActions.some(na => {
-      // Check if this todo contains any next actions
-      return na.path.slice(0, currentPath.length).every((id, idx) => id === currentPath[idx]);
-    });
     
     // In focus mode, we need to find the original path from the full todos
     let projectPath = undefined;
-    if (showOnlyNextActions || showOnlyFocusTasks) {
-      if (showOnlyFocusTasks && todo.focusPriority) {
-        // Find the original todo path in the full tree
-        const focusInfo = focusTodos.find(ft => ft.todo.id === todo.id);
-        if (focusInfo) {
-          projectPath = getProjectPath(todos, focusInfo.path);
-        }
-      } else {
-        projectPath = getProjectPath(todos, currentPath);
+    if (showOnlyFocusTasks && todo.focusPriority) {
+      // Find the original todo path in the full tree
+      const focusInfo = focusTodos.find(ft => ft.todo.id === todo.id);
+      if (focusInfo) {
+        projectPath = getProjectPath(todos, focusInfo.path);
       }
     }
 
@@ -147,10 +134,8 @@ function TodoListContent() {
         parentIds={parentIds}
         parentTodo={parentTodo}
         isExpanded={isExpanded(todo.id)}
-        isNextAction={isNA}
-        hasNextAction={hasNA}
         projectPath={projectPath}
-        showProjectPath={showOnlyNextActions}
+        showProjectPath={false}
         showFocusPath={showOnlyFocusTasks}
         onToggle={toggleTodo}
         onDelete={deleteTodo}
@@ -199,13 +184,6 @@ function TodoListContent() {
                   show: true
                 },
                 {
-                  icon: Zap,
-                  onClick: toggleShowOnlyNextActions,
-                  tooltip: showOnlyNextActions ? '전체 보기' : '다음 행동만 보기',
-                  active: showOnlyNextActions,
-                  show: true
-                },
-                {
                   icon: showCompleted ? EyeOff : Eye,
                   onClick: toggleShowCompleted,
                   tooltip: showCompleted ? '완료 항목 숨기기' : '완료 항목 보기',
@@ -242,7 +220,6 @@ function TodoListContent() {
               <span>{stats.completed}/{stats.total} 완료</span>
               {stats.hiddenCount > 0 && <span className="text-orange-500">({stats.hiddenCount}개 숨김)</span>}
               {stats.focusTasksCount > 0 && <span className="text-yellow-500">⭐ {stats.focusTasksCount}개</span>}
-              {stats.nextActionsCount > 0 && <span className="text-blue-500">⚡ {stats.nextActionsCount}개</span>}
             </div>
           </div>
         </div>
@@ -269,7 +246,17 @@ function TodoListContent() {
                 items={visibleTodos.map(t => t.id)} 
                 strategy={verticalListSortingStrategy}
               >
-                {visibleTodos.map((todo) => renderTodo(todo))}
+                {visibleTodos.map((todo) => {
+                  // In focus mode, find the original parent path
+                  if (showOnlyFocusTasks && todo.focusPriority) {
+                    const focusInfo = focusTodos.find(ft => ft.todo.id === todo.id);
+                    if (focusInfo && focusInfo.path.length > 0) {
+                      const parentIds = focusInfo.path.slice(0, -1);
+                      return renderTodo(todo, 0, parentIds);
+                    }
+                  }
+                  return renderTodo(todo);
+                })}
               </SortableContext>
               {stats.maxDepth >= MAX_TODO_DEPTH && (
                 <p className="text-xs text-muted-foreground text-center mt-4">

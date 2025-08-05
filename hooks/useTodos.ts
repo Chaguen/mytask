@@ -12,8 +12,6 @@ import {
   updateTodoText,
   setTodoEditing,
   copyTodoInList,
-  getAllNextActions,
-  isNextAction,
   getProjectPath,
   reorderTodos,
   getParentIdsToCollapse,
@@ -32,17 +30,11 @@ export function useTodos() {
   const [inputValue, setInputValue] = useState('');
   const [subtaskInputs, setSubtaskInputs] = useState<{ [key: number]: string }>({});
   const [showCompleted, setShowCompleted] = useState<boolean>(true);
-  const [showOnlyNextActions, setShowOnlyNextActions] = useState<boolean>(false);
   const [showOnlyFocusTasks, setShowOnlyFocusTasks] = useState<boolean>(false);
   const { loading, error, loadTodos, saveTodos } = useTodoAPI();
   const { expandedTodos, toggleExpanded, expand, collapse, isExpanded } = useExpandedState();
   
   const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-
-  // Memoized next actions
-  const nextActions = useMemo(() => {
-    return getAllNextActions(todos);
-  }, [todos]);
 
   // Memoized focus todos
   const focusTodos = useMemo(() => {
@@ -58,18 +50,6 @@ export function useTodos() {
       filtered = filtered.filter(todo => !todo.completed);
     }
     
-    // Filter by next actions
-    if (showOnlyNextActions) {
-      const nextActionIds = new Set(nextActions.map(na => na.todo.id));
-      // Include todos that are next actions or contain next actions
-      filtered = filtered.filter(todo => {
-        if (nextActionIds.has(todo.id)) return true;
-        // Check if this todo contains any next actions
-        const todoNextActions = getAllNextActions([todo]);
-        return todoNextActions.length > 0;
-      });
-    }
-    
     // Filter by focus tasks
     if (showOnlyFocusTasks) {
       // Extract only focus tasks as a flat list
@@ -77,7 +57,7 @@ export function useTodos() {
     }
     
     return filtered;
-  }, [todos, showCompleted, showOnlyNextActions, showOnlyFocusTasks, nextActions, focusTodos]);
+  }, [todos, showCompleted, showOnlyFocusTasks, focusTodos]);
 
   // Memoized stats (calculate from all todos, not just visible)
   const todoStats = useMemo(() => {
@@ -90,11 +70,10 @@ export function useTodos() {
       completed: totalCompleted,
       visibleCompleted,
       hiddenCount,
-      nextActionsCount: nextActions.length,
       focusTasksCount: focusTodos.length,
       maxDepth: getMaxDepth(todos),
     };
-  }, [todos, visibleTodos, nextActions, focusTodos]);
+  }, [todos, visibleTodos, focusTodos]);
 
   // Load todos on mount
   useEffect(() => {
@@ -110,14 +89,6 @@ export function useTodos() {
     const saved = localStorage.getItem('showCompleted');
     if (saved !== null) {
       setShowCompleted(JSON.parse(saved));
-    }
-  }, []);
-
-  // Load showOnlyNextActions from localStorage after mount
-  useEffect(() => {
-    const saved = localStorage.getItem('showOnlyNextActions');
-    if (saved !== null) {
-      setShowOnlyNextActions(JSON.parse(saved));
     }
   }, []);
 
@@ -247,10 +218,6 @@ export function useTodos() {
     setShowCompleted(prev => !prev);
   }, []);
 
-  const toggleShowOnlyNextActions = useCallback(() => {
-    setShowOnlyNextActions(prev => !prev);
-  }, []);
-
   const toggleShowOnlyFocusTasks = useCallback(() => {
     setShowOnlyFocusTasks(prev => !prev);
   }, []);
@@ -273,13 +240,6 @@ export function useTodos() {
       localStorage.setItem('showCompleted', JSON.stringify(showCompleted));
     }
   }, [showCompleted]);
-
-  // Save showOnlyNextActions to localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('showOnlyNextActions', JSON.stringify(showOnlyNextActions));
-    }
-  }, [showOnlyNextActions]);
 
   // Save showOnlyFocusTasks to localStorage
   useEffect(() => {
@@ -319,14 +279,10 @@ export function useTodos() {
     copyTodo,
     showCompleted,
     toggleShowCompleted,
-    showOnlyNextActions,
-    toggleShowOnlyNextActions,
     showOnlyFocusTasks,
     toggleShowOnlyFocusTasks,
     toggleFocusTodo: toggleFocusTodoHandler,
     focusTodos,
-    nextActions,
-    isNextAction,
     getProjectPath,
     reorderTodos: reorderTodosHandler,
     stats: todoStats,
