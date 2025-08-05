@@ -15,7 +15,8 @@ import {
   getAllNextActions,
   isNextAction,
   getProjectPath,
-  reorderTodos
+  reorderTodos,
+  getParentIdsToCollapse
 } from '@/utils/todo-helpers';
 import { findTodoByPath } from '@/utils/todo-tree-utils';
 import { DEBOUNCE_DELAY } from '@/constants/todo';
@@ -131,26 +132,8 @@ export function useTodos() {
       newTodos = updateParentCompletion(newTodos, fullPath);
       
       // Auto-collapse completed parent todos
-      // Check each parent in the path from bottom to top
-      for (let i = parentIds.length - 1; i >= 0; i--) {
-        const parentPath = parentIds.slice(0, i);
-        const parentId = parentIds[i];
-        
-        // Get the parent todo
-        if (parentPath.length === 0) {
-          const parentTodo = newTodos.find(t => t.id === parentId);
-          if (parentTodo && parentTodo.completed && parentTodo.subtasks && parentTodo.subtasks.length > 0) {
-            // If parent is completed (all subtasks are done), collapse it
-            collapse(parentId);
-          }
-        } else {
-          const result = findTodoByPath(newTodos, [...parentPath, parentId]);
-          if (result.found && result.value && result.value.completed && result.value.subtasks && result.value.subtasks.length > 0) {
-            // If parent is completed (all subtasks are done), collapse it
-            collapse(parentId);
-          }
-        }
-      }
+      const idsToCollapse = getParentIdsToCollapse(newTodos, parentIds);
+      idsToCollapse.forEach(parentId => collapse(parentId));
     }
     
     setTodos(newTodos);

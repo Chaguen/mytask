@@ -431,6 +431,35 @@ export function areSiblings(
   return path1.every((id, index) => id === path2[index]);
 }
 
+// Get parent IDs that should be collapsed after todo completion
+export function getParentIdsToCollapse(
+  todos: Todo[],
+  parentIds: TodoPath
+): number[] {
+  const idsToCollapse: number[] = [];
+  
+  // Check each parent in the path from bottom to top
+  for (let i = parentIds.length - 1; i >= 0; i--) {
+    const parentPath = parentIds.slice(0, i);
+    const parentId = parentIds[i];
+    
+    // Get the parent todo
+    if (parentPath.length === 0) {
+      const parentTodo = todos.find(t => t.id === parentId);
+      if (parentTodo?.completed && parentTodo.subtasks && parentTodo.subtasks.length > 0) {
+        idsToCollapse.push(parentId);
+      }
+    } else {
+      const result = findTodoByPath(todos, [...parentPath, parentId]);
+      if (result.found && result.value?.completed && result.value.subtasks && result.value.subtasks.length > 0) {
+        idsToCollapse.push(parentId);
+      }
+    }
+  }
+  
+  return idsToCollapse;
+}
+
 // Batch update multiple todos
 export function batchUpdateTodos(
   todos: Todo[],
