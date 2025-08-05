@@ -171,53 +171,65 @@ function TodoListContent() {
       onDragEnd={handleDragEnd}
     >
       <Card className="w-full max-w-2xl">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>My Todo List</CardTitle>
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>
-              {stats.completed}/{stats.total} 완료
-              {stats.hiddenCount > 0 && ` (${stats.hiddenCount}개 숨김)`}
-              {stats.nextActionsCount > 0 && ` | ${stats.nextActionsCount}개 다음 행동`}
-              {stats.focusTasksCount > 0 && ` | ${stats.focusTasksCount}개 집중`}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleShowOnlyFocusTasks}
-              className="text-xs"
-            >
-              <Star className="h-3 w-3 mr-1" />
-              {showOnlyFocusTasks ? '전체 보기' : '집중할 작업'}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleShowOnlyNextActions}
-              className="text-xs"
-            >
-              <Zap className="h-3 w-3 mr-1" />
-              {showOnlyNextActions ? '전체 보기' : '다음 행동만'}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleShowCompleted}
-              className="text-xs"
-            >
-              {showCompleted ? <EyeOff className="h-3 w-3 mr-1" /> : <Eye className="h-3 w-3 mr-1" />}
-              {showCompleted ? '완료 항목 숨기기' : '완료 항목 보기'}
-            </Button>
-            {stats.completed > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearCompleted}
-                className="text-xs"
-              >
-                완료 항목 삭제
-              </Button>
-            )}
+      <CardHeader className="pb-3">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">My Todo List</CardTitle>
+            <div className="flex items-center gap-2">
+              {[
+                {
+                  icon: Star,
+                  onClick: toggleShowOnlyFocusTasks,
+                  tooltip: showOnlyFocusTasks ? '전체 보기' : '집중할 작업만 보기',
+                  active: showOnlyFocusTasks,
+                  show: true
+                },
+                {
+                  icon: Zap,
+                  onClick: toggleShowOnlyNextActions,
+                  tooltip: showOnlyNextActions ? '전체 보기' : '다음 행동만 보기',
+                  active: showOnlyNextActions,
+                  show: true
+                },
+                {
+                  icon: showCompleted ? EyeOff : Eye,
+                  onClick: toggleShowCompleted,
+                  tooltip: showCompleted ? '완료 항목 숨기기' : '완료 항목 보기',
+                  active: false,
+                  show: true
+                }
+              ].map((btn, idx) => btn.show && (
+                <Button
+                  key={idx}
+                  variant={btn.active ? "secondary" : "ghost"}
+                  size="icon"
+                  onClick={btn.onClick}
+                  className="h-8 w-8"
+                  title={btn.tooltip}
+                >
+                  <btn.icon className="h-4 w-4" />
+                </Button>
+              ))}
+              {stats.completed > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearCompleted}
+                  className="text-xs h-8 px-2"
+                  title="완료된 모든 항목 삭제"
+                >
+                  완료 삭제
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-3">
+              <span>{stats.completed}/{stats.total} 완료</span>
+              {stats.hiddenCount > 0 && <span className="text-orange-500">({stats.hiddenCount}개 숨김)</span>}
+              {stats.focusTasksCount > 0 && <span className="text-yellow-500">⭐ {stats.focusTasksCount}개</span>}
+              {stats.nextActionsCount > 0 && <span className="text-blue-500">⚡ {stats.nextActionsCount}개</span>}
+            </div>
           </div>
         </div>
       </CardHeader>
