@@ -567,7 +567,15 @@ export function extractFocusTasksFlat(todos: Todo[]): Todo[] {
 export function extractFocusTasksWithSubtasks(todos: Todo[]): Todo[] {
   const result: Todo[] = [];
   
-  function processLevel(todoList: Todo[]): Todo[] {
+  // First, check if any subtask is focused independently
+  function hasFocusedSubtask(todo: Todo): boolean {
+    if (!todo.subtasks) return false;
+    return todo.subtasks.some(st => 
+      st.focusPriority !== undefined || hasFocusedSubtask(st)
+    );
+  }
+  
+  function processLevel(todoList: Todo[], skipNonFocusedParents: boolean = true): Todo[] {
     const levelResult: Todo[] = [];
     
     for (const todo of todoList) {
@@ -578,16 +586,22 @@ export function extractFocusTasksWithSubtasks(todos: Todo[]): Todo[] {
           // Include ALL subtasks regardless of their focus status
           subtasks: todo.subtasks
         });
-      } else if (todo.subtasks && todo.subtasks.length > 0) {
-        // If not focused, check if any subtask is focused
-        const focusedSubtasks = processLevel(todo.subtasks);
-        if (focusedSubtasks.length > 0) {
-          // Include this todo but only with focused subtasks
-          levelResult.push({
-            ...todo,
-            focusPriority: undefined, // Parent isn't directly focused
-            subtasks: focusedSubtasks
-          });
+      } else if (todo.subtasks && todo.subtasks.length > 0 && hasFocusedSubtask(todo)) {
+        // If not focused but has focused subtasks
+        if (skipNonFocusedParents) {
+          // Skip the parent and only include focused subtasks directly
+          const focusedSubtasks = processLevel(todo.subtasks, true);
+          levelResult.push(...focusedSubtasks);
+        } else {
+          // Include parent with only focused subtasks (for nested cases)
+          const focusedSubtasks = processLevel(todo.subtasks, false);
+          if (focusedSubtasks.length > 0) {
+            levelResult.push({
+              ...todo,
+              focusPriority: undefined,
+              subtasks: focusedSubtasks
+            });
+          }
         }
       }
     }
@@ -595,7 +609,7 @@ export function extractFocusTasksWithSubtasks(todos: Todo[]): Todo[] {
     return levelResult;
   }
   
-  const processed = processLevel(todos);
+  const processed = processLevel(todos, true);
   
   // Sort by focus priority at the top level
   return processed.sort((a, b) => {

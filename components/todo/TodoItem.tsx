@@ -124,8 +124,8 @@ function TodoItemComponent({
       transition={{ duration: 0.2 }}
     >
       {showProjectPath && projectPath && projectPath.length > 1 && (
-        <div className="text-xs text-muted-foreground mb-1 ml-6">
-          {projectPath.slice(0, -1).join(' > ')}
+        <div className="text-[10px] text-muted-foreground/70 ml-8 -mt-1 mb-0.5">
+          {projectPath.slice(0, -1).join(' › ')}
         </div>
       )}
       <motion.div 
@@ -190,11 +190,6 @@ function TodoItemComponent({
                 >
                   {formatCompletionTime(todo.completedAt)}
                 </span>
-              </div>
-            )}
-            {showFocusPath && projectPath && projectPath.length > 1 && todo.focusPriority && (
-              <div className="text-xs text-muted-foreground ml-6 mt-1">
-                경로: {projectPath.slice(0, -1).join(' > ')}
               </div>
             )}
           </div>

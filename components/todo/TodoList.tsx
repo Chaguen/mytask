@@ -119,8 +119,8 @@ function TodoListContent() {
         isExpanded={isExpanded(todo.id)}
         isInFocusMode={showOnlyFocusTasks}
         projectPath={projectPath}
-        showProjectPath={false}
-        showFocusPath={showOnlyFocusTasks}
+        showProjectPath={showOnlyFocusTasks}
+        showFocusPath={false}
         onToggle={(id, parentIds) => {
           toggleTodo(id, parentIds);
           // Show celebration if a task was completed
