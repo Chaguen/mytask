@@ -7,6 +7,9 @@ export interface BaseTodo {
   focusPriority?: number;
   isEditing?: boolean;
   dueDate?: string; // ISO date string for due date
+  timeSpent?: number; // Total time spent in milliseconds
+  isTimerRunning?: boolean;
+  timerStartedAt?: string; // ISO string when timer started
 }
 
 export interface Todo extends BaseTodo {
