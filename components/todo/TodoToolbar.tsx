@@ -92,17 +92,6 @@ export function TodoToolbar({
       </div>
 
       <div className="flex items-center gap-6">
-        <div className="flex flex-col items-end">
-          <div className="text-lg font-semibold text-foreground">
-            {format(currentTime, 'a h:mm:ss', { locale: ko })}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {format(currentTime, 'yyyy년 M월 d일 EEEE', { locale: ko })}
-          </div>
-        </div>
-        
-        <div className="h-10 w-px bg-border" />
-        
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -117,6 +106,17 @@ export function TodoToolbar({
             <span className="text-sm font-semibold text-foreground">
               {stats.completed}/{stats.total}
             </span>
+          </div>
+        </div>
+        
+        <div className="h-10 w-px bg-border" />
+        
+        <div className="flex flex-col items-end">
+          <div className="text-lg font-semibold text-foreground">
+            {format(currentTime, 'a h:mm:ss', { locale: ko })}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {format(currentTime, 'yyyy년 M월 d일 EEEE', { locale: ko })}
           </div>
         </div>
       </div>

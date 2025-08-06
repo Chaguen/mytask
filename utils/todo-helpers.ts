@@ -97,6 +97,52 @@ export function addSubtaskToTodo(
   });
 }
 
+// Add sibling todo at the same level
+export function addSiblingTodo(
+  todos: Todo[],
+  currentId: number,
+  parentIds?: TodoPath,
+  text: string = '',
+  startEditing: boolean = true
+): Todo[] {
+  const newTodo = createTodo(text, startEditing);
+  
+  if (!parentIds || parentIds.length === 0) {
+    // Add sibling at root level
+    const currentIndex = todos.findIndex(t => t.id === currentId);
+    if (currentIndex === -1) {
+      console.error('Todo not found:', currentId);
+      return todos;
+    }
+    
+    const newTodos = [...todos];
+    newTodos.splice(currentIndex + 1, 0, newTodo);
+    return newTodos;
+  }
+  
+  // Add sibling within a parent
+  if (!isValidPath(todos, parentIds)) {
+    console.error('Invalid parent path:', parentIds);
+    return todos;
+  }
+  
+  return updateTodoAtPath(todos, parentIds, (parentTodo) => {
+    const currentIndex = parentTodo.subtasks?.findIndex(st => st.id === currentId) ?? -1;
+    if (currentIndex === -1) {
+      console.error('Subtask not found:', currentId);
+      return parentTodo;
+    }
+    
+    const newSubtasks = [...(parentTodo.subtasks || [])];
+    newSubtasks.splice(currentIndex + 1, 0, newTodo);
+    
+    return {
+      ...parentTodo,
+      subtasks: newSubtasks,
+    };
+  });
+}
+
 export function checkAllSubtasksCompleted(subtasks: Todo[] | undefined): boolean {
   if (!subtasks || subtasks.length === 0) return false;
   

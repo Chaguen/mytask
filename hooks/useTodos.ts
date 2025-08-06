@@ -8,6 +8,7 @@ import {
   toggleTodoCompletion, 
   deleteTodoFromList,
   addSubtaskToTodo,
+  addSiblingTodo,
   updateParentCompletion,
   updateTodoText,
   updateTodoDueDate,
@@ -178,6 +179,25 @@ export function useTodos() {
     debouncedSave(newTodos);
   }, [todos, expand, debouncedSave]);
 
+  const addSibling = useCallback((id: number, parentIds?: TodoPath) => {
+    // Check depth limit for new sibling at same level
+    if (parentIds && parentIds.length >= MAX_TODO_DEPTH) {
+      console.warn(`Maximum nesting depth (${MAX_TODO_DEPTH}) reached`);
+      return;
+    }
+
+    const newTodos = addSiblingTodo(todos, id, parentIds, '', true);
+    setTodos(newTodos);
+    
+    // If adding sibling to a subtask, ensure parent is expanded
+    if (parentIds && parentIds.length > 0) {
+      const parentId = parentIds[parentIds.length - 1];
+      expand(parentId);
+    }
+    
+    debouncedSave(newTodos);
+  }, [todos, expand, debouncedSave]);
+
   const setSubtaskInput = useCallback((parentId: number, value: string) => {
     setSubtaskInputs(prev => ({ ...prev, [parentId]: value }));
   }, []);
@@ -288,6 +308,7 @@ export function useTodos() {
     toggleTodo,
     deleteTodo,
     addSubtask,
+    addSibling,
     updateTodoText: updateTodoTextHandler,
     updateTodoDueDate: updateTodoDueDateHandler,
     setTodoEditing: setTodoEditingHandler,

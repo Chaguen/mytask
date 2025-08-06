@@ -10,6 +10,7 @@ interface EditableTodoTextProps {
   onTextChange: (newText: string) => void;
   onEditStart: () => void;
   onEditEnd: () => void;
+  onAddSibling?: () => void;
   className?: string;
 }
 
@@ -20,6 +21,7 @@ export function EditableTodoText({
   onTextChange,
   onEditStart,
   onEditEnd,
+  onAddSibling,
   className = "",
 }: EditableTodoTextProps) {
   const [editText, setEditText] = useState(text);
@@ -40,8 +42,18 @@ export function EditableTodoText({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
+      if (e.shiftKey) {
+        // Shift+Enter: Allow default behavior (if multiline was supported)
+        return;
+      }
       e.preventDefault();
       handleSave();
+      // After saving, add a sibling todo
+      if (onAddSibling) {
+        setTimeout(() => {
+          onAddSibling();
+        }, 0);
+      }
     } else if (e.key === "Escape") {
       e.preventDefault();
       handleCancel();

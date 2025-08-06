@@ -2,12 +2,13 @@ import { z } from 'zod';
 
 const BaseTodoSchema = z.object({
   id: z.number(),
-  text: z.string().min(1),
+  text: z.string(),  // Allow empty string for editing mode
   completed: z.boolean(),
   createdAt: z.string(),
   completedAt: z.string().optional(),
   focusPriority: z.number().min(1).max(5).optional(),
   dueDate: z.string().optional(),
+  isEditing: z.boolean().optional(),
 });
 
 export type TodoInput = z.infer<typeof BaseTodoSchema>;
