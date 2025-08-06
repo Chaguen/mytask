@@ -124,7 +124,19 @@ function TodoListContent() {
         onToggle={(id, parentIds) => {
           toggleTodo(id, parentIds);
           // Show celebration if a task was completed
-          const todo = todos.find(t => t.id === id);
+          // Use a recursive search to find the todo in the tree
+          const findTodoById = (todoList: Todo[], targetId: number): Todo | undefined => {
+            for (const t of todoList) {
+              if (t.id === targetId) return t;
+              if (t.subtasks) {
+                const found = findTodoById(t.subtasks, targetId);
+                if (found) return found;
+              }
+            }
+            return undefined;
+          };
+          
+          const todo = findTodoById(showOnlyFocusTasks ? visibleTodos : todos, id);
           if (todo && !todo.completed && (!todo.subtasks || todo.subtasks.length === 0)) {
             setShowCelebration(true);
           }

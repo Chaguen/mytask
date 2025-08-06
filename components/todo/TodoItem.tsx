@@ -149,21 +149,12 @@ function TodoItemComponent({
         )}
         {styles.showPlaceholder && <div className="w-6" />}
         
-        <motion.div
-          whileTap={{ scale: 0.9 }}
-          animate={{ 
-            rotate: isChecked ? [0, 360] : 0,
-            scale: isChecked ? [1, 1.2, 1] : 1
-          }}
-          transition={{ duration: 0.3 }}
-        >
-          <Checkbox
-            checked={isChecked}
-            onCheckedChange={handleCheckboxChange}
-            aria-label={`Mark "${todo.text}" as ${todo.completed ? 'incomplete' : 'complete'}`}
-            className="transition-colors duration-200"
-          />
-        </motion.div>
+        <Checkbox
+          checked={isChecked}
+          onCheckedChange={handleCheckboxChange}
+          aria-label={`Mark "${todo.text}" as ${todo.completed ? 'incomplete' : 'complete'}`}
+          className="transition-colors duration-200"
+        />
         
         {todo.focusPriority && (
           <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold ml-2">
