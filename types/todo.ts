@@ -6,6 +6,7 @@ export interface BaseTodo {
   completedAt?: string;
   focusPriority?: number;
   isEditing?: boolean;
+  dueDate?: string; // ISO date string for due date
 }
 
 export interface Todo extends BaseTodo {

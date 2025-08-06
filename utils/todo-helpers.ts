@@ -181,6 +181,27 @@ export function updateTodoText(
   }));
 }
 
+// Update todo due date
+export function updateTodoDueDate(
+  todos: Todo[],
+  id: number,
+  dueDate: string | undefined,
+  parentIds?: TodoPath
+): Todo[] {
+  const path = parentIds ? [...parentIds, id] : [id];
+  
+  // Validate path - skip validation for empty arrays (top-level todos)
+  if (parentIds && parentIds.length > 0 && !isValidPath(todos, parentIds)) {
+    console.error('Invalid parent path:', parentIds);
+    return todos;
+  }
+  
+  return updateTodoAtPath(todos, path, (todo) => ({
+    ...todo,
+    dueDate,
+  }));
+}
+
 // Set todo editing state
 export function setTodoEditing(
   todos: Todo[],

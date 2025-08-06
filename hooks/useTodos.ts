@@ -10,6 +10,7 @@ import {
   addSubtaskToTodo,
   updateParentCompletion,
   updateTodoText,
+  updateTodoDueDate,
   setTodoEditing,
   copyTodoInList,
   getProjectPath,
@@ -201,6 +202,12 @@ export function useTodos() {
     setTodos(newTodos);
   }, [todos]);
 
+  const updateTodoDueDateHandler = useCallback((id: number, dueDate: string | undefined, parentIds?: TodoPath) => {
+    const newTodos = updateTodoDueDate(todos, id, dueDate, parentIds);
+    setTodos(newTodos);
+    debouncedSave(newTodos);
+  }, [todos, debouncedSave]);
+
   const clearCompleted = useCallback(() => {
     const filterCompleted = (todoList: Todo[]): Todo[] => {
       return todoList
@@ -282,6 +289,7 @@ export function useTodos() {
     deleteTodo,
     addSubtask,
     updateTodoText: updateTodoTextHandler,
+    updateTodoDueDate: updateTodoDueDateHandler,
     setTodoEditing: setTodoEditingHandler,
     clearCompleted,
     copyTodo,

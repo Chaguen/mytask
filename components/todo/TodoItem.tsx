@@ -3,13 +3,19 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, ChevronRight, Copy, Check, Star } from "lucide-react";
+import { Trash2, Plus, ChevronRight, Copy, Check, Star, Calendar } from "lucide-react";
 import { Todo } from "@/types/todo";
 import { TodoPath } from "@/types/todo-tree";
 import { EditableTodoText } from "./EditableTodoText";
 import { useTodoStyles, useTodoKeyboardShortcuts } from "@/hooks/useTodoStyles";
 import { formatCompletionTime, getFullDateTime } from "@/utils/date-helpers";
+import { formatDueDate, getDueDateColor, getQuickDates, formatDateForInput } from "@/utils/date-utils";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface TodoItemProps {
   todo: Todo;
@@ -29,6 +35,7 @@ interface TodoItemProps {
   onAddSubtask?: () => void;
   onUpdateText: (id: number, text: string, parentIds?: TodoPath) => void;
   onSetEditing: (id: number, isEditing: boolean, parentIds?: TodoPath) => void;
+  onUpdateDueDate?: (id: number, dueDate: string | undefined, parentIds?: TodoPath) => void;
   renderSubtask?: (parentTodo: Todo, parentIds: TodoPath) => React.ReactNode;
 }
 
@@ -49,11 +56,14 @@ function TodoItemComponent({
   onAddSubtask,
   onUpdateText,
   onSetEditing,
+  onUpdateDueDate,
   renderSubtask,
 }: TodoItemProps) {
   // All hooks must be called unconditionally at the top
   const [showCelebration, setShowCelebration] = useState(false);
   const [isChecked, setIsChecked] = useState(todo.completed);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(todo.dueDate || '');
   
   // Computed values after hooks
   const hasSubtasks = todo.subtasks && todo.subtasks.length > 0;
@@ -200,6 +210,12 @@ function TodoItemComponent({
           )}
         </motion.div>
         
+        {todo.dueDate && (
+          <span className={`text-xs font-medium px-2 py-0.5 rounded ${getDueDateColor(todo.dueDate, todo.completed)}`}>
+            {formatDueDate(todo.dueDate)}
+          </span>
+        )}
+        
         <Button
           variant="ghost"
           size="icon"
@@ -209,6 +225,104 @@ function TodoItemComponent({
         >
           <Plus className="h-4 w-4" />
         </Button>
+        
+        {onUpdateDueDate && (
+          <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 ${todo.dueDate ? 'text-primary' : ''}`}
+                aria-label="Set due date"
+              >
+                <Calendar className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3" align="end">
+              <div className="space-y-2">
+                <div className="text-sm font-medium">마감일 설정</div>
+                <div className="flex flex-col gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const dates = getQuickDates();
+                      onUpdateDueDate(todo.id, dates.today, parentIds);
+                      setDatePickerOpen(false);
+                    }}
+                    className="justify-start"
+                  >
+                    오늘
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const dates = getQuickDates();
+                      onUpdateDueDate(todo.id, dates.tomorrow, parentIds);
+                      setDatePickerOpen(false);
+                    }}
+                    className="justify-start"
+                  >
+                    내일
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const dates = getQuickDates();
+                      onUpdateDueDate(todo.id, dates.thisWeek, parentIds);
+                      setDatePickerOpen(false);
+                    }}
+                    className="justify-start"
+                  >
+                    이번 주말
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const dates = getQuickDates();
+                      onUpdateDueDate(todo.id, dates.nextWeek, parentIds);
+                      setDatePickerOpen(false);
+                    }}
+                    className="justify-start"
+                  >
+                    다음 주말
+                  </Button>
+                </div>
+                <div className="flex gap-1">
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value);
+                      if (e.target.value) {
+                        onUpdateDueDate(todo.id, e.target.value, parentIds);
+                        setDatePickerOpen(false);
+                      }
+                    }}
+                    className="flex-1 px-2 py-1 text-sm border rounded"
+                  />
+                  {todo.dueDate && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        onUpdateDueDate(todo.id, undefined, parentIds);
+                        setSelectedDate('');
+                        setDatePickerOpen(false);
+                      }}
+                      className="px-2"
+                    >
+                      삭제
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
         
         {onToggleFocus && (
           <Button

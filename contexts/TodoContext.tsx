@@ -22,6 +22,7 @@ interface TodoContextType {
   deleteTodo: (id: number, parentIds?: TodoPath) => void;
   addSubtask: (parentIds: TodoPath) => void;
   updateTodoText: (id: number, text: string, parentIds?: TodoPath) => void;
+  updateTodoDueDate: (id: number, dueDate: string | undefined, parentIds?: TodoPath) => void;
   setTodoEditing: (id: number, isEditing: boolean, parentIds?: TodoPath) => void;
   clearCompleted: () => void;
   copyTodo: (id: number, parentIds?: TodoPath) => void;
