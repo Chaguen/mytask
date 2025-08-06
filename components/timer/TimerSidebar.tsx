@@ -182,7 +182,6 @@ export function TimerSidebar({ isOpen, onClose, sessions, activeTimer }: TimerSi
                 </div>
               </div>
 
-              {/* Timeline View */}
               <div>
                 <h3 className="text-sm font-medium mb-3">작업 시간 분포</h3>
                 <Card className="p-3">
@@ -190,7 +189,7 @@ export function TimerSidebar({ isOpen, onClose, sessions, activeTimer }: TimerSi
                     <div className="space-y-3">
                       <div className="relative">
                         <div className="h-12 bg-muted/30 rounded relative overflow-hidden">
-                          {[6, 9, 12, 15, 18, 21].map(hour => (
+                          {[6, 12, 18].map(hour => (
                             <div
                               key={hour}
                               className="absolute top-0 bottom-0 w-px bg-border"
@@ -206,8 +205,8 @@ export function TimerSidebar({ isOpen, onClose, sessions, activeTimer }: TimerSi
                               <div
                                 key={idx}
                                 className={`absolute top-2 bottom-2 ${
-                                  session.isActive ? 'bg-green-500 animate-pulse' : 'bg-green-500/70'
-                                } rounded-sm hover:bg-green-600 transition-colors`}
+                                  session.isActive ? 'bg-green-500 animate-pulse' : 'bg-green-500'
+                                } rounded-sm`}
                                 style={{
                                   left: `${left}%`,
                                   width: `${Math.max(0.5, width)}%`,
@@ -228,8 +227,8 @@ export function TimerSidebar({ isOpen, onClose, sessions, activeTimer }: TimerSi
                       </div>
                       
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>작업 세션: {timelineData.length}개</span>
-                        <span>활동 시간: {Math.floor(totalTime / (1000 * 60 * 60))}시간 {Math.floor((totalTime % (1000 * 60 * 60)) / (1000 * 60))}분</span>
+                        <span>세션: {timelineData.length}개</span>
+                        <span>총 {Math.floor(totalTime / (1000 * 60 * 60))}시간 {Math.floor((totalTime % (1000 * 60 * 60)) / (1000 * 60))}분</span>
                       </div>
                     </div>
                   ) : (

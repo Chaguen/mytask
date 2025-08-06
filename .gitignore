@@ -44,3 +44,6 @@ next-env.d.ts
 # todos data file
 todos.json
 todos.json.backup
+
+# timer sessions data file
+timer-sessions.json
