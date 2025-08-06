@@ -181,6 +181,27 @@ export function updateTodoText(
   }));
 }
 
+// Update todo due date
+export function updateTodoDueDate(
+  todos: Todo[],
+  id: number,
+  dueDate: string | undefined,
+  parentIds?: TodoPath
+): Todo[] {
+  const path = parentIds ? [...parentIds, id] : [id];
+  
+  // Validate path - skip validation for empty arrays (top-level todos)
+  if (parentIds && parentIds.length > 0 && !isValidPath(todos, parentIds)) {
+    console.error('Invalid parent path:', parentIds);
+    return todos;
+  }
+  
+  return updateTodoAtPath(todos, path, (todo) => ({
+    ...todo,
+    dueDate,
+  }));
+}
+
 // Set todo editing state
 export function setTodoEditing(
   todos: Todo[],
@@ -561,6 +582,68 @@ export function extractFocusTasksFlat(todos: Todo[]): Todo[] {
   
   // Sort by focus priority
   return focusTasks.sort((a, b) => (a.focusPriority || 0) - (b.focusPriority || 0));
+}
+
+// Extract focus tasks with their full subtree (hierarchical)
+export function extractFocusTasksWithSubtasks(todos: Todo[]): Todo[] {
+  const result: Todo[] = [];
+  
+  // First, check if any subtask is focused independently
+  function hasFocusedSubtask(todo: Todo): boolean {
+    if (!todo.subtasks) return false;
+    return todo.subtasks.some(st => 
+      st.focusPriority !== undefined || hasFocusedSubtask(st)
+    );
+  }
+  
+  function processLevel(todoList: Todo[], skipNonFocusedParents: boolean = true): Todo[] {
+    const levelResult: Todo[] = [];
+    
+    for (const todo of todoList) {
+      // If this todo is focused, include it with all its subtasks
+      if (todo.focusPriority !== undefined) {
+        levelResult.push({
+          ...todo,
+          // Include ALL subtasks regardless of their focus status
+          subtasks: todo.subtasks
+        });
+      } else if (todo.subtasks && todo.subtasks.length > 0 && hasFocusedSubtask(todo)) {
+        // If not focused but has focused subtasks
+        if (skipNonFocusedParents) {
+          // Skip the parent and only include focused subtasks directly
+          const focusedSubtasks = processLevel(todo.subtasks, true);
+          levelResult.push(...focusedSubtasks);
+        } else {
+          // Include parent with only focused subtasks (for nested cases)
+          const focusedSubtasks = processLevel(todo.subtasks, false);
+          if (focusedSubtasks.length > 0) {
+            levelResult.push({
+              ...todo,
+              focusPriority: undefined,
+              subtasks: focusedSubtasks
+            });
+          }
+        }
+      }
+    }
+    
+    return levelResult;
+  }
+  
+  const processed = processLevel(todos, true);
+  
+  // Sort by focus priority at the top level
+  return processed.sort((a, b) => {
+    const aPriority = a.focusPriority ?? Infinity;
+    const bPriority = b.focusPriority ?? Infinity;
+    
+    if (aPriority !== Infinity && bPriority !== Infinity) {
+      return aPriority - bPriority;
+    }
+    if (aPriority !== Infinity) return -1;
+    if (bPriority !== Infinity) return 1;
+    return 0;
+  });
 }
 
 // Toggle focus priority for a todo

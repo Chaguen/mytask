@@ -8,7 +8,6 @@ import { useTodoContext } from "@/contexts/TodoContext";
 import { TodoPath, MAX_TODO_DEPTH } from "@/types/todo-tree";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Todo } from "@/types/todo";
-import { Eye, EyeOff, Star } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -42,6 +41,7 @@ function TodoListContent() {
     deleteTodo,
     addSubtask,
     updateTodoText,
+    updateTodoDueDate,
     setTodoEditing,
     clearCompleted,
     copyTodo,
@@ -56,7 +56,7 @@ function TodoListContent() {
     stats,
   } = useTodoContext();
 
-  const [, setActiveId] = useState<number | null>(null);
+  const [activeId, setActiveId] = useState<number | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   
   const sensors = useSensors(
@@ -90,26 +90,7 @@ function TodoListContent() {
     setActiveId(null);
   };
 
-  if (loading) {
-    return (
-      <Card className="w-full max-w-2xl">
-        <CardContent className="py-8 text-center text-muted-foreground">
-          Loading todos...
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card className="w-full max-w-2xl">
-        <CardContent className="py-8 text-center text-destructive">
-          Error: {error}
-        </CardContent>
-      </Card>
-    );
-  }
-
+  // IMPORTANT: All hooks must be called before any conditional returns
   const renderTodo = useCallback((todo: Todo, level: number = 0, parentIds: TodoPath = [], parentTodo?: Todo) => {
     // Prevent rendering beyond max depth
     if (level >= MAX_TODO_DEPTH) {
@@ -136,13 +117,26 @@ function TodoListContent() {
         parentIds={parentIds}
         parentTodo={parentTodo}
         isExpanded={isExpanded(todo.id)}
+        isInFocusMode={showOnlyFocusTasks}
         projectPath={projectPath}
-        showProjectPath={false}
-        showFocusPath={showOnlyFocusTasks}
+        showProjectPath={showOnlyFocusTasks}
+        showFocusPath={false}
         onToggle={(id, parentIds) => {
           toggleTodo(id, parentIds);
           // Show celebration if a task was completed
-          const todo = todos.find(t => t.id === id);
+          // Use a recursive search to find the todo in the tree
+          const findTodoById = (todoList: Todo[], targetId: number): Todo | undefined => {
+            for (const t of todoList) {
+              if (t.id === targetId) return t;
+              if (t.subtasks) {
+                const found = findTodoById(t.subtasks, targetId);
+                if (found) return found;
+              }
+            }
+            return undefined;
+          };
+          
+          const todo = findTodoById(showOnlyFocusTasks ? visibleTodos : todos, id);
           if (todo && !todo.completed && (!todo.subtasks || todo.subtasks.length === 0)) {
             setShowCelebration(true);
           }
@@ -150,9 +144,10 @@ function TodoListContent() {
         onDelete={deleteTodo}
         onCopy={copyTodo}
         onToggleFocus={toggleFocusTodo}
-        onExpand={showOnlyFocusTasks ? undefined : toggleExpanded}
-        onAddSubtask={showOnlyFocusTasks ? undefined : () => addSubtask([...parentIds, todo.id])}
+        onExpand={toggleExpanded}
+        onAddSubtask={() => addSubtask([...parentIds, todo.id])}
         onUpdateText={updateTodoText}
+        onUpdateDueDate={updateTodoDueDate}
         onSetEditing={setTodoEditing}
         renderSubtask={(parentTodo, newParentIds) => {
           const siblings = parentTodo.subtasks || [];
@@ -182,8 +177,30 @@ function TodoListContent() {
     toggleExpanded,
     addSubtask,
     updateTodoText,
+    updateTodoDueDate,
     setTodoEditing,
   ]);
+
+  // Check loading and error states after all hooks are called
+  if (loading) {
+    return (
+      <Card className="w-full max-w-4xl">
+        <CardContent className="py-8 text-center text-muted-foreground">
+          Loading todos...
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="w-full max-w-4xl">
+        <CardContent className="py-8 text-center text-destructive">
+          Error: {error}
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <DndContext 
@@ -192,50 +209,21 @@ function TodoListContent() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <Card className="w-full max-w-2xl">
+      <Card className="w-full max-w-4xl">
       <CardHeader className="pb-3">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">My Todo List</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={showOnlyFocusTasks ? "secondary" : "ghost"}
-                size="icon"
-                onClick={toggleShowOnlyFocusTasks}
-                className="h-8 w-8"
-                title={showOnlyFocusTasks ? '전체 보기' : '집중할 작업만 보기'}
-              >
-                <Star className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleShowCompleted}
-                className="h-8 w-8"
-                title={showCompleted ? '완료 항목 숨기기' : '완료 항목 보기'}
-              >
-                {showCompleted ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-              {stats.completed > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearCompleted}
-                  className="text-xs h-8 px-2"
-                  title="완료된 모든 항목 삭제"
-                >
-                  완료 삭제
-                </Button>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-3">
-              <span>{stats.completed}/{stats.total} 완료</span>
-              {stats.hiddenCount > 0 && <span className="text-orange-500">({stats.hiddenCount}개 숨김)</span>}
-              {stats.focusTasksCount > 0 && <span className="text-yellow-500">⭐ {stats.focusTasksCount}개</span>}
-            </div>
-          </div>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">My Todo List</CardTitle>
+          {stats.completed > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearCompleted}
+              className="text-xs h-8 px-2"
+              title="완료된 모든 항목 삭제"
+            >
+              완료 삭제
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

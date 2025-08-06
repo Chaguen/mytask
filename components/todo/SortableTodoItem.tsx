@@ -14,6 +14,7 @@ interface SortableTodoItemProps {
   parentIds?: TodoPath;
   parentTodo?: Todo;
   isExpanded?: boolean;
+  isInFocusMode?: boolean;
   isNextAction?: boolean;
   hasNextAction?: boolean;
   projectPath?: string[];
@@ -26,6 +27,7 @@ interface SortableTodoItemProps {
   onExpand?: (id: number) => void;
   onAddSubtask?: () => void;
   onUpdateText: (id: number, text: string, parentIds?: TodoPath) => void;
+  onUpdateDueDate?: (id: number, dueDate: string | undefined, parentIds?: TodoPath) => void;
   onSetEditing: (id: number, isEditing: boolean, parentIds?: TodoPath) => void;
   renderSubtask?: (parentTodo: Todo, parentIds: TodoPath) => React.ReactNode;
 }

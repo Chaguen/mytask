@@ -10,6 +10,7 @@ import {
   addSubtaskToTodo,
   updateParentCompletion,
   updateTodoText,
+  updateTodoDueDate,
   setTodoEditing,
   copyTodoInList,
   getProjectPath,
@@ -20,6 +21,7 @@ import {
   autoReorderFocusPriorities,
   sortTodosByFocusPriority,
   extractFocusTasksFlat,
+  extractFocusTasksWithSubtasks,
   getTodayCompletedCount
 } from '@/utils/todo-helpers';
 import { findTodoByPath } from '@/utils/todo-tree-utils';
@@ -53,8 +55,8 @@ export function useTodos() {
     
     // Filter by focus tasks
     if (showOnlyFocusTasks) {
-      // Extract only focus tasks as a flat list
-      return extractFocusTasksFlat(todos);
+      // Extract focus tasks with their full subtree (hierarchical)
+      return extractFocusTasksWithSubtasks(todos);
     }
     
     return filtered;
@@ -89,17 +91,21 @@ export function useTodos() {
 
   // Load showCompleted from localStorage after mount
   useEffect(() => {
-    const saved = localStorage.getItem('showCompleted');
-    if (saved !== null) {
-      setShowCompleted(JSON.parse(saved));
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('showCompleted');
+      if (saved !== null) {
+        setShowCompleted(JSON.parse(saved));
+      }
     }
   }, []);
 
   // Load showOnlyFocusTasks from localStorage after mount
   useEffect(() => {
-    const saved = localStorage.getItem('showOnlyFocusTasks');
-    if (saved !== null) {
-      setShowOnlyFocusTasks(JSON.parse(saved));
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('showOnlyFocusTasks');
+      if (saved !== null) {
+        setShowOnlyFocusTasks(JSON.parse(saved));
+      }
     }
   }, []);
 
@@ -196,6 +202,12 @@ export function useTodos() {
     setTodos(newTodos);
   }, [todos]);
 
+  const updateTodoDueDateHandler = useCallback((id: number, dueDate: string | undefined, parentIds?: TodoPath) => {
+    const newTodos = updateTodoDueDate(todos, id, dueDate, parentIds);
+    setTodos(newTodos);
+    debouncedSave(newTodos);
+  }, [todos, debouncedSave]);
+
   const clearCompleted = useCallback(() => {
     const filterCompleted = (todoList: Todo[]): Todo[] => {
       return todoList
@@ -277,6 +289,7 @@ export function useTodos() {
     deleteTodo,
     addSubtask,
     updateTodoText: updateTodoTextHandler,
+    updateTodoDueDate: updateTodoDueDateHandler,
     setTodoEditing: setTodoEditingHandler,
     clearCompleted,
     copyTodo,
