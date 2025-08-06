@@ -25,6 +25,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useState, useCallback } from "react";
 import { CompletionCelebration } from "./CompletionCelebration";
+import { useTimerContext } from "@/contexts/TimerContext";
 
 function TodoListContent() {
   const {
@@ -57,6 +58,8 @@ function TodoListContent() {
     stats,
   } = useTodoContext();
 
+  const { activeTimer, startTimer, stopTimer, getTodoTimeSpent } = useTimerContext();
+  
   const [activeId, setActiveId] = useState<number | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   
@@ -90,6 +93,15 @@ function TodoListContent() {
     
     setActiveId(null);
   };
+
+  const handleToggleTimer = useCallback((todoId: number, todoText: string, parentIds?: TodoPath) => {
+    if (activeTimer?.todoId === todoId) {
+      stopTimer();
+    } else {
+      const pathNames = parentIds ? getProjectPath(todos, parentIds) : [];
+      startTimer(todoId, todoText, pathNames);
+    }
+  }, [activeTimer, startTimer, stopTimer, todos, getProjectPath]);
 
   // IMPORTANT: All hooks must be called before any conditional returns
   const renderTodo = useCallback((todo: Todo, level: number = 0, parentIds: TodoPath = [], parentTodo?: Todo) => {
@@ -151,6 +163,9 @@ function TodoListContent() {
         onUpdateText={updateTodoText}
         onUpdateDueDate={updateTodoDueDate}
         onSetEditing={setTodoEditing}
+        onToggleTimer={handleToggleTimer}
+        activeTimerId={activeTimer?.todoId}
+        todoTimeSpent={getTodoTimeSpent(todo.id)}
         renderSubtask={(parentTodo, newParentIds) => {
           const siblings = parentTodo.subtasks || [];
           if (siblings.length === 0) return null;
@@ -178,9 +193,15 @@ function TodoListContent() {
     toggleFocusTodo,
     toggleExpanded,
     addSubtask,
+    addSibling,
     updateTodoText,
     updateTodoDueDate,
     setTodoEditing,
+    handleToggleTimer,
+    activeTimer,
+    getTodoTimeSpent,
+    visibleTodos,
+    setShowCelebration,
   ]);
 
   // Check loading and error states after all hooks are called

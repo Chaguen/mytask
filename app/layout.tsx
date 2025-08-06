@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { TodoProvider } from "@/contexts/TodoContext";
+import { TimerProvider } from "@/contexts/TimerContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -30,7 +31,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <TodoProvider>
-            {children}
+            <TimerProvider>
+              {children}
+            </TimerProvider>
           </TodoProvider>
         </ThemeProvider>
       </body>

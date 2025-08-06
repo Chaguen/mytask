@@ -3,13 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, ChevronRight, Copy, Check, Star, Calendar } from "lucide-react";
+import { Trash2, Plus, ChevronRight, Copy, Check, Star, Calendar, Timer, Pause } from "lucide-react";
 import { Todo } from "@/types/todo";
 import { TodoPath } from "@/types/todo-tree";
 import { EditableTodoText } from "./EditableTodoText";
 import { useTodoStyles, useTodoKeyboardShortcuts } from "@/hooks/useTodoStyles";
 import { formatCompletionTime, getFullDateTime } from "@/utils/date-helpers";
 import { formatDueDate, getDueDateColor, getQuickDates, formatDateForInput } from "@/utils/date-utils";
+import { formatDuration } from "@/utils/timer-utils";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Popover,
@@ -27,6 +28,7 @@ interface TodoItemProps {
   projectPath?: string[];
   showProjectPath?: boolean;
   showFocusPath?: boolean;
+  activeTimerId?: number;
   onToggle: (id: number, parentIds?: TodoPath) => void;
   onDelete: (id: number, parentIds?: TodoPath) => void;
   onCopy: (id: number, parentIds?: TodoPath) => void;
@@ -37,6 +39,8 @@ interface TodoItemProps {
   onUpdateText: (id: number, text: string, parentIds?: TodoPath) => void;
   onSetEditing: (id: number, isEditing: boolean, parentIds?: TodoPath) => void;
   onUpdateDueDate?: (id: number, dueDate: string | undefined, parentIds?: TodoPath) => void;
+  onToggleTimer?: (id: number, text: string, parentIds?: TodoPath) => void;
+  todoTimeSpent?: number;
   renderSubtask?: (parentTodo: Todo, parentIds: TodoPath) => React.ReactNode;
 }
 
@@ -49,6 +53,7 @@ function TodoItemComponent({
   projectPath,
   showProjectPath = false,
   showFocusPath = false,
+  activeTimerId,
   onToggle,
   onDelete,
   onCopy,
@@ -59,6 +64,8 @@ function TodoItemComponent({
   onUpdateText,
   onSetEditing,
   onUpdateDueDate,
+  onToggleTimer,
+  todoTimeSpent = 0,
   renderSubtask,
 }: TodoItemProps) {
   // All hooks must be called unconditionally at the top
@@ -217,6 +224,28 @@ function TodoItemComponent({
           <span className={`text-xs font-medium px-2 py-0.5 rounded ${getDueDateColor(todo.dueDate, todo.completed)}`}>
             {formatDueDate(todo.dueDate)}
           </span>
+        )}
+        
+        {todoTimeSpent > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {formatDuration(todoTimeSpent)}
+          </span>
+        )}
+        
+        {onToggleTimer && !todo.completed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onToggleTimer(todo.id, todo.text, parentIds)}
+            className={`h-8 w-8 ${activeTimerId === todo.id ? 'text-red-500' : ''}`}
+            aria-label={activeTimerId === todo.id ? 'Stop timer' : 'Start timer'}
+          >
+            {activeTimerId === todo.id ? (
+              <Pause className="h-4 w-4" />
+            ) : (
+              <Timer className="h-4 w-4" />
+            )}
+          </Button>
         )}
         
         <Button

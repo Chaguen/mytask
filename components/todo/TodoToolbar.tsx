@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar, List, Star, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { Calendar, List, Star, Eye, EyeOff, CheckCircle2, Timer } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -13,6 +13,8 @@ interface TodoToolbarProps {
   onToggleShowCompleted: () => void;
   showOnlyFocusTasks: boolean;
   onToggleShowOnlyFocusTasks: () => void;
+  onToggleTimerSidebar?: () => void;
+  hasActiveTimer?: boolean;
   stats: {
     total: number;
     completed: number;
@@ -28,6 +30,8 @@ export function TodoToolbar({
   onToggleShowCompleted,
   showOnlyFocusTasks,
   onToggleShowOnlyFocusTasks,
+  onToggleTimerSidebar,
+  hasActiveTimer = false,
   stats,
 }: TodoToolbarProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -89,6 +93,24 @@ export function TodoToolbar({
           {showCompleted ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
           {showCompleted ? '완료 숨기기' : '완료 보기'}
         </Button>
+
+        {onToggleTimerSidebar && (
+          <>
+            <div className="h-8 w-px bg-border" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleTimerSidebar}
+              className={`h-8 px-3 ${hasActiveTimer ? 'text-red-500' : ''}`}
+            >
+              <Timer className="h-4 w-4 mr-2" />
+              타이머 통계
+              {hasActiveTimer && (
+                <span className="ml-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              )}
+            </Button>
+          </>
+        )}
       </div>
 
       <div className="flex items-center gap-6">

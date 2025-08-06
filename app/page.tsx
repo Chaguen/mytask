@@ -5,7 +5,10 @@ import { TodoList } from "@/components/todo/TodoList";
 import { CalendarView } from "@/components/todo/CalendarView";
 import { TodoToolbar } from "@/components/todo/TodoToolbar";
 import { TodoErrorBoundary } from "@/components/todo/TodoErrorBoundary";
+import { FloatingTimer } from "@/components/timer/FloatingTimer";
+import { TimerSidebar } from "@/components/timer/TimerSidebar";
 import { useTodoContext } from "@/contexts/TodoContext";
+import { useTimerContext } from "@/contexts/TimerContext";
 
 export default function Home() {
   const { 
@@ -19,7 +22,10 @@ export default function Home() {
     setTodoEditing,
   } = useTodoContext();
   
+  const { activeTimer, stopTimer, todaySessions } = useTimerContext();
+  
   const [view, setView] = useState<'list' | 'calendar'>('list');
+  const [showTimerSidebar, setShowTimerSidebar] = useState(false);
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -30,6 +36,8 @@ export default function Home() {
         onToggleShowCompleted={toggleShowCompleted}
         showOnlyFocusTasks={showOnlyFocusTasks}
         onToggleShowOnlyFocusTasks={toggleShowOnlyFocusTasks}
+        onToggleTimerSidebar={() => setShowTimerSidebar(!showTimerSidebar)}
+        hasActiveTimer={!!activeTimer}
         stats={stats}
       />
       
@@ -46,6 +54,18 @@ export default function Home() {
           )}
         </TodoErrorBoundary>
       </main>
+      
+      <FloatingTimer 
+        activeTimer={activeTimer}
+        onStop={stopTimer}
+      />
+      
+      <TimerSidebar
+        isOpen={showTimerSidebar}
+        onClose={() => setShowTimerSidebar(false)}
+        sessions={todaySessions}
+        activeTimer={activeTimer}
+      />
     </div>
   );
 }

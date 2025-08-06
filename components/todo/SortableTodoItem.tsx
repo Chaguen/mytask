@@ -20,6 +20,7 @@ interface SortableTodoItemProps {
   projectPath?: string[];
   showProjectPath?: boolean;
   showFocusPath?: boolean;
+  activeTimerId?: number;
   onToggle: (id: number, parentIds?: TodoPath) => void;
   onDelete: (id: number, parentIds?: TodoPath) => void;
   onCopy: (id: number, parentIds?: TodoPath) => void;
@@ -30,6 +31,8 @@ interface SortableTodoItemProps {
   onUpdateText: (id: number, text: string, parentIds?: TodoPath) => void;
   onUpdateDueDate?: (id: number, dueDate: string | undefined, parentIds?: TodoPath) => void;
   onSetEditing: (id: number, isEditing: boolean, parentIds?: TodoPath) => void;
+  onToggleTimer?: (id: number, text: string, parentIds?: TodoPath) => void;
+  todoTimeSpent?: number;
   renderSubtask?: (parentTodo: Todo, parentIds: TodoPath) => React.ReactNode;
 }
 

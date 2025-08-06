@@ -9,6 +9,9 @@ const BaseTodoSchema = z.object({
   focusPriority: z.number().min(1).max(5).optional(),
   dueDate: z.string().optional(),
   isEditing: z.boolean().optional(),
+  timeSpent: z.number().optional(),
+  isTimerRunning: z.boolean().optional(),
+  timerStartedAt: z.string().optional(),
 });
 
 export type TodoInput = z.infer<typeof BaseTodoSchema>;
