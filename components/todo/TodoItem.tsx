@@ -33,6 +33,7 @@ interface TodoItemProps {
   onToggleFocus?: (id: number, parentIds?: TodoPath) => void;
   onExpand?: (id: number) => void;
   onAddSubtask?: () => void;
+  onAddSibling?: (id: number, parentIds?: TodoPath) => void;
   onUpdateText: (id: number, text: string, parentIds?: TodoPath) => void;
   onSetEditing: (id: number, isEditing: boolean, parentIds?: TodoPath) => void;
   onUpdateDueDate?: (id: number, dueDate: string | undefined, parentIds?: TodoPath) => void;
@@ -54,6 +55,7 @@ function TodoItemComponent({
   onToggleFocus,
   onExpand,
   onAddSubtask,
+  onAddSibling,
   onUpdateText,
   onSetEditing,
   onUpdateDueDate,
@@ -189,6 +191,7 @@ function TodoItemComponent({
                 onTextChange={(newText) => onUpdateText(todo.id, newText, parentIds)}
                 onEditStart={() => onSetEditing(todo.id, true, parentIds)}
                 onEditEnd={() => onSetEditing(todo.id, false, parentIds)}
+                onAddSibling={onAddSibling ? () => onAddSibling(todo.id, parentIds) : undefined}
               />
             </div>
             {todo.completed && todo.completedAt && (

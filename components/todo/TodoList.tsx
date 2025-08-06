@@ -40,6 +40,7 @@ function TodoListContent() {
     toggleTodo,
     deleteTodo,
     addSubtask,
+    addSibling,
     updateTodoText,
     updateTodoDueDate,
     setTodoEditing,
@@ -146,6 +147,7 @@ function TodoListContent() {
         onToggleFocus={toggleFocusTodo}
         onExpand={toggleExpanded}
         onAddSubtask={() => addSubtask([...parentIds, todo.id])}
+        onAddSibling={addSibling}
         onUpdateText={updateTodoText}
         onUpdateDueDate={updateTodoDueDate}
         onSetEditing={setTodoEditing}
