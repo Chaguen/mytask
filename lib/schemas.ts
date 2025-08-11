@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+const RecurringPatternSchema = z.object({
+  type: z.enum(['daily', 'weekly', 'monthly', 'weekdays', 'custom']),
+  interval: z.number().optional(),
+  daysOfWeek: z.array(z.number().min(0).max(6)).optional(),
+  dayOfMonth: z.number().min(1).max(31).optional(),
+  endDate: z.string().optional(),
+  nextDueDate: z.string().optional(),
+});
+
 const BaseTodoSchema = z.object({
   id: z.number(),
   text: z.string(),  // Allow empty string for editing mode
@@ -12,6 +21,9 @@ const BaseTodoSchema = z.object({
   timeSpent: z.number().optional(),
   isTimerRunning: z.boolean().optional(),
   timerStartedAt: z.string().optional(),
+  recurringPattern: RecurringPatternSchema.optional(),
+  isRecurring: z.boolean().optional(),
+  parentRecurringId: z.number().optional(),
 });
 
 export type TodoInput = z.infer<typeof BaseTodoSchema>;

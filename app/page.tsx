@@ -20,6 +20,8 @@ export default function Home() {
     toggleShowOnlyFocusTasks,
     toggleTodo,
     setTodoEditing,
+    viewMode,
+    toggleViewMode,
   } = useTodoContext();
   
   const { activeTimer, stopTimer, todaySessions } = useTimerContext();
@@ -38,6 +40,8 @@ export default function Home() {
         onToggleShowOnlyFocusTasks={toggleShowOnlyFocusTasks}
         onToggleTimerSidebar={() => setShowTimerSidebar(!showTimerSidebar)}
         hasActiveTimer={!!activeTimer}
+        viewMode={viewMode}
+        onToggleViewMode={toggleViewMode}
         stats={stats}
       />
       
@@ -49,7 +53,7 @@ export default function Home() {
             <CalendarView 
               todos={todos}
               onToggleTodo={toggleTodo}
-              onEditTodo={setTodoEditing}
+              onEditTodo={(id, parentIds) => setTodoEditing(id, true, parentIds)}
             />
           )}
         </TodoErrorBoundary>

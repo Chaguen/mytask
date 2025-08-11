@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar, List, Star, Eye, EyeOff, CheckCircle2, Timer } from "lucide-react";
+import { Calendar, List, Star, Eye, EyeOff, CheckCircle2, Timer, CalendarDays, Infinity } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { ViewMode } from "@/hooks/useTodos";
 
 interface TodoToolbarProps {
   view: 'list' | 'calendar';
@@ -15,6 +16,8 @@ interface TodoToolbarProps {
   onToggleShowOnlyFocusTasks: () => void;
   onToggleTimerSidebar?: () => void;
   hasActiveTimer?: boolean;
+  viewMode: ViewMode;
+  onToggleViewMode: () => void;
   stats: {
     total: number;
     completed: number;
@@ -32,6 +35,8 @@ export function TodoToolbar({
   onToggleShowOnlyFocusTasks,
   onToggleTimerSidebar,
   hasActiveTimer = false,
+  viewMode,
+  onToggleViewMode,
   stats,
 }: TodoToolbarProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -68,6 +73,20 @@ export function TodoToolbar({
         </div>
 
         <div className="h-8 w-px bg-border" />
+        
+        <Button
+          variant={viewMode === 'today' ? "secondary" : "ghost"}
+          size="sm"
+          onClick={onToggleViewMode}
+          className="h-8 px-3"
+        >
+          {viewMode === 'today' ? (
+            <CalendarDays className="h-4 w-4 mr-2" />
+          ) : (
+            <Infinity className="h-4 w-4 mr-2" />
+          )}
+          {viewMode === 'today' ? '오늘' : '전체'}
+        </Button>
         
         <Button
           variant={showOnlyFocusTasks ? "secondary" : "ghost"}

@@ -44,6 +44,7 @@ function TodoListContent() {
     addSibling,
     updateTodoText,
     updateTodoDueDate,
+    updateRecurring,
     setTodoEditing,
     clearCompleted,
     copyTodo,
@@ -162,6 +163,7 @@ function TodoListContent() {
         onAddSibling={addSibling}
         onUpdateText={updateTodoText}
         onUpdateDueDate={updateTodoDueDate}
+        onUpdateRecurring={updateRecurring}
         onSetEditing={setTodoEditing}
         onToggleTimer={handleToggleTimer}
         activeTimerId={activeTimer?.todoId}
@@ -196,6 +198,7 @@ function TodoListContent() {
     addSibling,
     updateTodoText,
     updateTodoDueDate,
+    updateRecurring,
     setTodoEditing,
     handleToggleTimer,
     activeTimer,

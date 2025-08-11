@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useContext } from 'react';
-import { useTodos } from '@/hooks/useTodos';
-import { Todo } from '@/types/todo';
+import { useTodos, ViewMode } from '@/hooks/useTodos';
+import { Todo, RecurringPattern } from '@/types/todo';
 import { TodoPath } from '@/types/todo-tree';
 
 interface TodoContextType {
@@ -24,6 +24,7 @@ interface TodoContextType {
   addSibling: (id: number, parentIds?: TodoPath) => void;
   updateTodoText: (id: number, text: string, parentIds?: TodoPath) => void;
   updateTodoDueDate: (id: number, dueDate: string | undefined, parentIds?: TodoPath) => void;
+  updateRecurring: (id: number, pattern: RecurringPattern | undefined, parentIds?: TodoPath) => void;
   setTodoEditing: (id: number, isEditing: boolean, parentIds?: TodoPath) => void;
   clearCompleted: () => void;
   copyTodo: (id: number, parentIds?: TodoPath) => void;
@@ -44,6 +45,9 @@ interface TodoContextType {
     maxDepth: number;
     todayCompleted: number;
   };
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
+  toggleViewMode: () => void;
 }
 
 const TodoContext = createContext<TodoContextType | undefined>(undefined);

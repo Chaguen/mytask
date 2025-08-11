@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Todo } from '@/types/todo';
+import { Todo, RecurringPattern } from '@/types/todo';
 import { TodoPath, MAX_TODO_DEPTH } from '@/types/todo-tree';
 import { useTodoAPI } from './useTodoAPI';
 import { useExpandedState } from './useExpandedState';
@@ -25,9 +25,13 @@ import {
   extractFocusTasksWithSubtasks,
   getTodayCompletedCount
 } from '@/utils/todo-helpers';
-import { findTodoByPath } from '@/utils/todo-tree-utils';
+import { findTodoByPath, updateTodoAtPath } from '@/utils/todo-tree-utils';
 import { DEBOUNCE_DELAY } from '@/constants/todo';
 import { getMaxDepth, countTodos } from '@/utils/todo-tree-utils';
+import { parseRecurringText, generateNextRecurrence, createRecurringInstance, shouldShowInTodayView } from '@/utils/recurring-utils';
+import { format } from 'date-fns';
+
+export type ViewMode = 'all' | 'today';
 
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -35,6 +39,7 @@ export function useTodos() {
   const [subtaskInputs, setSubtaskInputs] = useState<{ [key: number]: string }>({});
   const [showCompleted, setShowCompleted] = useState<boolean>(true);
   const [showOnlyFocusTasks, setShowOnlyFocusTasks] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('all');
   const { loading, error, loadTodos, saveTodos } = useTodoAPI();
   const { expandedTodos, toggleExpanded, expand, collapse, isExpanded } = useExpandedState();
   
@@ -49,6 +54,11 @@ export function useTodos() {
   const visibleTodos = useMemo(() => {
     let filtered = todos;
     
+    // Filter by view mode (today view)
+    if (viewMode === 'today') {
+      filtered = filtered.filter(todo => shouldShowInTodayView(todo, viewMode));
+    }
+    
     // Filter by completion status
     if (!showCompleted) {
       filtered = filtered.filter(todo => !todo.completed);
@@ -57,11 +67,11 @@ export function useTodos() {
     // Filter by focus tasks
     if (showOnlyFocusTasks) {
       // Extract focus tasks with their full subtree (hierarchical)
-      return extractFocusTasksWithSubtasks(todos);
+      return extractFocusTasksWithSubtasks(filtered);
     }
     
     return filtered;
-  }, [todos, showCompleted, showOnlyFocusTasks, focusTodos]);
+  }, [todos, showCompleted, showOnlyFocusTasks, focusTodos, viewMode]);
 
   // Memoized stats (calculate from all todos, not just visible)
   const todoStats = useMemo(() => {
@@ -122,7 +132,15 @@ export function useTodos() {
 
   const addTodo = useCallback(() => {
     if (inputValue.trim()) {
-      const newTodo = createTodo(inputValue);
+      const { cleanText, pattern } = parseRecurringText(inputValue.trim());
+      const newTodo = createTodo(cleanText);
+      
+      if (pattern) {
+        newTodo.recurringPattern = pattern;
+        newTodo.isRecurring = true;
+        newTodo.dueDate = pattern.nextDueDate || format(new Date(), 'yyyy-MM-dd');
+      }
+      
       const newTodos = [...todos, newTodo];
       setTodos(newTodos);
       setInputValue('');
@@ -132,6 +150,24 @@ export function useTodos() {
 
   const toggleTodo = useCallback((id: number, parentIds?: TodoPath) => {
     let newTodos = toggleTodoCompletion(todos, id, parentIds);
+    
+    // Check if this is a recurring task being completed
+    const result = findTodoByPath(newTodos, parentIds ? [...parentIds, id] : [id]);
+    const todo = result.value;
+    if (todo && todo.completed && todo.recurringPattern && !todo.parentRecurringId) {
+      // Generate next instance
+      const nextDueDate = generateNextRecurrence(todo.recurringPattern);
+      const nextInstance = createRecurringInstance(todo, nextDueDate);
+      
+      // Update the recurring pattern for next time
+      nextInstance.recurringPattern = {
+        ...todo.recurringPattern,
+        nextDueDate,
+      };
+      
+      // Add the new instance to the list
+      newTodos = [...newTodos, nextInstance];
+    }
     
     // Update parent completion if this is a subtask
     if (parentIds && parentIds.length > 0) {
@@ -228,6 +264,51 @@ export function useTodos() {
     debouncedSave(newTodos);
   }, [todos, debouncedSave]);
 
+  const updateRecurringHandler = useCallback((id: number, pattern: RecurringPattern | undefined, parentIds?: TodoPath) => {
+    const result = findTodoByPath(todos, parentIds ? [...parentIds, id] : [id]);
+    const todo = result.value;
+    
+    if (!todo) return;
+    
+    // Update the todo with the new recurring pattern
+    const updateTodo = (todoList: Todo[]): Todo[] => {
+      return todoList.map(t => {
+        if (t.id === id) {
+          if (pattern) {
+            // Setting recurring pattern
+            return {
+              ...t,
+              recurringPattern: pattern,
+              isRecurring: true,
+              dueDate: pattern.nextDueDate || t.dueDate,
+            };
+          } else {
+            // Removing recurring pattern
+            const { recurringPattern, isRecurring, parentRecurringId, ...rest } = t;
+            return rest;
+          }
+        }
+        if (t.subtasks) {
+          return {
+            ...t,
+            subtasks: updateTodo(t.subtasks),
+          };
+        }
+        return t;
+      });
+    };
+    
+    const newTodos = parentIds && parentIds.length > 0
+      ? updateTodoAtPath(todos, parentIds, parent => ({
+          ...parent,
+          subtasks: updateTodo(parent.subtasks || []),
+        })).value || todos
+      : updateTodo(todos);
+    
+    setTodos(newTodos);
+    debouncedSave(newTodos);
+  }, [todos, debouncedSave]);
+
   const clearCompleted = useCallback(() => {
     const filterCompleted = (todoList: Todo[]): Todo[] => {
       return todoList
@@ -292,6 +373,10 @@ export function useTodos() {
     };
   }, []);
 
+  const toggleViewMode = useCallback(() => {
+    setViewMode(prev => prev === 'all' ? 'today' : 'all');
+  }, []);
+
   return {
     todos,
     visibleTodos,
@@ -311,6 +396,7 @@ export function useTodos() {
     addSibling,
     updateTodoText: updateTodoTextHandler,
     updateTodoDueDate: updateTodoDueDateHandler,
+    updateRecurring: updateRecurringHandler,
     setTodoEditing: setTodoEditingHandler,
     clearCompleted,
     copyTodo,
@@ -323,5 +409,8 @@ export function useTodos() {
     getProjectPath,
     reorderTodos: reorderTodosHandler,
     stats: todoStats,
+    viewMode,
+    setViewMode,
+    toggleViewMode,
   };
 }

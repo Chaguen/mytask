@@ -4,7 +4,7 @@ import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { TodoItem } from "./TodoItem";
-import { Todo } from "@/types/todo";
+import { Todo, RecurringPattern } from "@/types/todo";
 import { TodoPath } from "@/types/todo-tree";
 import { GripVertical } from "lucide-react";
 
@@ -30,6 +30,7 @@ interface SortableTodoItemProps {
   onAddSibling?: (id: number, parentIds?: TodoPath) => void;
   onUpdateText: (id: number, text: string, parentIds?: TodoPath) => void;
   onUpdateDueDate?: (id: number, dueDate: string | undefined, parentIds?: TodoPath) => void;
+  onUpdateRecurring?: (id: number, pattern: RecurringPattern | undefined, parentIds?: TodoPath) => void;
   onSetEditing: (id: number, isEditing: boolean, parentIds?: TodoPath) => void;
   onToggleTimer?: (id: number, text: string, parentIds?: TodoPath) => void;
   todoTimeSpent?: number;
