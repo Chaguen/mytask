@@ -91,14 +91,39 @@ export function useTodos() {
     };
   }, [todos, visibleTodos, focusTodos]);
 
-  // Load todos on mount
+  // Load todos on mount and clean old completed todos
   useEffect(() => {
     const initTodos = async () => {
       const loadedTodos = await loadTodos();
-      setTodos(loadedTodos);
+      
+      // Auto-clean completed todos older than 3 days
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      
+      const cleanOldCompleted = (todoList: Todo[]): Todo[] => {
+        return todoList
+          .filter(todo => {
+            // Keep if not completed or completed within 3 days
+            if (!todo.completed || !todo.completedAt) return true;
+            const completedDate = new Date(todo.completedAt);
+            return completedDate > threeDaysAgo;
+          })
+          .map(todo => ({
+            ...todo,
+            subtasks: todo.subtasks ? cleanOldCompleted(todo.subtasks) : undefined,
+          }));
+      };
+      
+      const cleanedTodos = cleanOldCompleted(loadedTodos);
+      setTodos(cleanedTodos);
+      
+      // Save cleaned todos if anything was removed
+      if (JSON.stringify(cleanedTodos) !== JSON.stringify(loadedTodos)) {
+        saveTodos(cleanedTodos);
+      }
     };
     initTodos();
-  }, [loadTodos]);
+  }, [loadTodos, saveTodos]);
 
   // Load showCompleted from localStorage after mount
   useEffect(() => {
