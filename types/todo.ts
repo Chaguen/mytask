@@ -1,3 +1,14 @@
+export type RecurringType = 'daily' | 'weekly' | 'monthly' | 'weekdays' | 'custom';
+
+export interface RecurringPattern {
+  type: RecurringType;
+  interval?: number; // Every N days/weeks/months
+  daysOfWeek?: number[]; // 0=Sunday, 6=Saturday
+  dayOfMonth?: number; // 1-31
+  endDate?: string; // Optional end date for recurring
+  nextDueDate?: string; // Next scheduled date
+}
+
 export interface BaseTodo {
   id: number;
   text: string;
@@ -10,6 +21,9 @@ export interface BaseTodo {
   timeSpent?: number; // Total time spent in milliseconds
   isTimerRunning?: boolean;
   timerStartedAt?: string; // ISO string when timer started
+  recurringPattern?: RecurringPattern; // Recurring task configuration
+  isRecurring?: boolean; // Flag for recurring tasks
+  parentRecurringId?: number; // ID of the original recurring task
 }
 
 export interface Todo extends BaseTodo {

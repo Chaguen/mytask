@@ -3,15 +3,17 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, ChevronRight, Copy, Check, Star, Calendar, Timer, Pause } from "lucide-react";
-import { Todo } from "@/types/todo";
+import { Trash2, Plus, ChevronRight, Copy, Check, Star, Calendar, Timer, Pause, RefreshCw } from "lucide-react";
+import { Todo, RecurringPattern } from "@/types/todo";
 import { TodoPath } from "@/types/todo-tree";
+import { getRecurringDisplayText } from "@/utils/recurring-utils";
 import { EditableTodoText } from "./EditableTodoText";
 import { useTodoStyles, useTodoKeyboardShortcuts } from "@/hooks/useTodoStyles";
 import { formatCompletionTime, getFullDateTime } from "@/utils/date-helpers";
 import { formatDueDate, getDueDateColor, getQuickDates, formatDateForInput } from "@/utils/date-utils";
 import { formatDuration } from "@/utils/timer-utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { format, addDays, addWeeks, addMonths } from "date-fns";
 import {
   Popover,
   PopoverContent,
@@ -39,6 +41,7 @@ interface TodoItemProps {
   onUpdateText: (id: number, text: string, parentIds?: TodoPath) => void;
   onSetEditing: (id: number, isEditing: boolean, parentIds?: TodoPath) => void;
   onUpdateDueDate?: (id: number, dueDate: string | undefined, parentIds?: TodoPath) => void;
+  onUpdateRecurring?: (id: number, pattern: RecurringPattern | undefined, parentIds?: TodoPath) => void;
   onToggleTimer?: (id: number, text: string, parentIds?: TodoPath) => void;
   todoTimeSpent?: number;
   renderSubtask?: (parentTodo: Todo, parentIds: TodoPath) => React.ReactNode;
@@ -64,6 +67,7 @@ function TodoItemComponent({
   onUpdateText,
   onSetEditing,
   onUpdateDueDate,
+  onUpdateRecurring,
   onToggleTimer,
   todoTimeSpent = 0,
   renderSubtask,
@@ -73,6 +77,7 @@ function TodoItemComponent({
   const [isChecked, setIsChecked] = useState(todo.completed);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(todo.dueDate || '');
+  const [recurringPickerOpen, setRecurringPickerOpen] = useState(false);
   
   // Computed values after hooks
   const hasSubtasks = todo.subtasks && todo.subtasks.length > 0;
@@ -226,6 +231,16 @@ function TodoItemComponent({
           </span>
         )}
         
+        {todo.isRecurring && todo.recurringPattern && (
+          <span 
+            className="flex items-center gap-1 text-xs text-blue-600"
+            title={getRecurringDisplayText(todo.recurringPattern)}
+          >
+            <RefreshCw className="h-3 w-3" />
+            {getRecurringDisplayText(todo.recurringPattern)}
+          </span>
+        )}
+        
         {todoTimeSpent > 0 && (
           <span className="text-xs text-muted-foreground">
             {formatDuration(todoTimeSpent)}
@@ -348,6 +363,110 @@ function TodoItemComponent({
                       className="px-2"
                     >
                       삭제
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
+        
+        {onUpdateRecurring && (
+          <Popover open={recurringPickerOpen} onOpenChange={setRecurringPickerOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-8 w-8 ${todo.isRecurring ? 'text-blue-600' : ''}`}
+                aria-label="Set recurring"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-3" align="end">
+              <div className="space-y-2">
+                <div className="text-sm font-medium">반복 설정</div>
+                <div className="flex flex-col gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const pattern: RecurringPattern = {
+                        type: 'daily',
+                        interval: 1,
+                        nextDueDate: todo.dueDate || format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+                      };
+                      onUpdateRecurring(todo.id, pattern, parentIds);
+                      setRecurringPickerOpen(false);
+                    }}
+                    className="justify-start"
+                  >
+                    매일
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const pattern: RecurringPattern = {
+                        type: 'weekdays',
+                        daysOfWeek: [1, 2, 3, 4, 5],
+                        nextDueDate: todo.dueDate || format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+                      };
+                      onUpdateRecurring(todo.id, pattern, parentIds);
+                      setRecurringPickerOpen(false);
+                    }}
+                    className="justify-start"
+                  >
+                    평일 (월-금)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const today = new Date();
+                      const dayOfWeek = today.getDay();
+                      const pattern: RecurringPattern = {
+                        type: 'weekly',
+                        daysOfWeek: [dayOfWeek],
+                        interval: 1,
+                        nextDueDate: todo.dueDate || format(addWeeks(today, 1), 'yyyy-MM-dd'),
+                      };
+                      onUpdateRecurring(todo.id, pattern, parentIds);
+                      setRecurringPickerOpen(false);
+                    }}
+                    className="justify-start"
+                  >
+                    매주 {['일', '월', '화', '수', '목', '금', '토'][new Date().getDay()]}요일
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const today = new Date();
+                      const pattern: RecurringPattern = {
+                        type: 'monthly',
+                        dayOfMonth: today.getDate(),
+                        interval: 1,
+                        nextDueDate: todo.dueDate || format(addMonths(today, 1), 'yyyy-MM-dd'),
+                      };
+                      onUpdateRecurring(todo.id, pattern, parentIds);
+                      setRecurringPickerOpen(false);
+                    }}
+                    className="justify-start"
+                  >
+                    매월 {new Date().getDate()}일
+                  </Button>
+                  {todo.isRecurring && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        onUpdateRecurring(todo.id, undefined, parentIds);
+                        setRecurringPickerOpen(false);
+                      }}
+                      className="text-red-600 justify-start"
+                    >
+                      반복 해제
                     </Button>
                   )}
                 </div>

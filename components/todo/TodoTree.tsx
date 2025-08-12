@@ -74,6 +74,10 @@ export const TodoTree = React.memo(({
             onAddSubtask={onAddSubtask}
             onUpdateText={onUpdateText}
             onSetEditing={onSetEditing}
+            isNextAction={isNextAction}
+            hasNextAction={hasNextAction}
+            getProjectPath={getProjectPath}
+            showOnlyNextActions={showOnlyNextActions}
           />
         )}
       />
