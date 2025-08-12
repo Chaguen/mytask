@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, ChevronRight, Copy, Check, Star, Calendar, Timer, Pause, RefreshCw } from "lucide-react";
-import { Todo, RecurringPattern } from "@/types/todo";
+import { Trash2, Plus, ChevronRight, Copy, Check, Star, Calendar, Timer, Pause, RefreshCw, Circle } from "lucide-react";
+import { Todo, RecurringPattern, Difficulty } from "@/types/todo";
 import { TodoPath } from "@/types/todo-tree";
 import { getRecurringDisplayText } from "@/utils/recurring-utils";
 import { EditableTodoText } from "./EditableTodoText";
@@ -12,6 +12,7 @@ import { useTodoStyles, useTodoKeyboardShortcuts } from "@/hooks/useTodoStyles";
 import { formatCompletionTime, getFullDateTime } from "@/utils/date-helpers";
 import { formatDueDate, getDueDateColor, getQuickDates, formatDateForInput } from "@/utils/date-utils";
 import { formatDuration } from "@/utils/timer-utils";
+import { getDifficultyBadgeColor, getDifficultyEmoji, getNextDifficulty, shouldSuggestSubtasks, getSubtaskSuggestion } from "@/utils/difficulty-utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, addWeeks, addMonths } from "date-fns";
 import {
@@ -42,6 +43,7 @@ interface TodoItemProps {
   onSetEditing: (id: number, isEditing: boolean, parentIds?: TodoPath) => void;
   onUpdateDueDate?: (id: number, dueDate: string | undefined, parentIds?: TodoPath) => void;
   onUpdateRecurring?: (id: number, pattern: RecurringPattern | undefined, parentIds?: TodoPath) => void;
+  onUpdateDifficulty?: (id: number, difficulty: Difficulty | undefined, parentIds?: TodoPath) => void;
   onToggleTimer?: (id: number, text: string, parentIds?: TodoPath) => void;
   todoTimeSpent?: number;
   renderSubtask?: (parentTodo: Todo, parentIds: TodoPath) => React.ReactNode;
@@ -68,6 +70,7 @@ function TodoItemComponent({
   onSetEditing,
   onUpdateDueDate,
   onUpdateRecurring,
+  onUpdateDifficulty,
   onToggleTimer,
   todoTimeSpent = 0,
   renderSubtask,
@@ -83,6 +86,7 @@ function TodoItemComponent({
   const hasSubtasks = todo.subtasks && todo.subtasks.length > 0;
   const completedSubtasks = todo.subtasks?.filter(st => st.completed).length || 0;
   const totalSubtasks = todo.subtasks?.length || 0;
+  const difficultyHint = getSubtaskSuggestion(todo.difficulty, totalSubtasks);
 
   const styles = useTodoStyles({
     level,
@@ -186,6 +190,12 @@ function TodoItemComponent({
           </span>
         )}
         
+        {todo.difficulty && (
+          <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ml-1 ${getDifficultyBadgeColor(todo.difficulty)}`}>
+            {getDifficultyEmoji(todo.difficulty)}
+          </span>
+        )}
+        
         <motion.div 
           className={styles.text.className}
           animate={{
@@ -260,6 +270,22 @@ function TodoItemComponent({
             ) : (
               <Timer className="h-4 w-4" />
             )}
+          </Button>
+        )}
+        
+        {onUpdateDifficulty && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              const nextDiff = getNextDifficulty(todo.difficulty);
+              onUpdateDifficulty(todo.id, nextDiff, parentIds);
+            }}
+            className={`h-8 w-8 ${todo.difficulty ? getDifficultyBadgeColor(todo.difficulty).replace('bg-', 'hover:bg-').replace('-500', '-100') : ''}`}
+            aria-label="Set difficulty"
+            title={`난이도: ${todo.difficulty ? getDifficultyEmoji(todo.difficulty) : '설정 안됨'}`}
+          >
+            <Circle className={`h-4 w-4 ${todo.difficulty ? getDifficultyBadgeColor(todo.difficulty).replace('bg-', 'text-').replace(' text-white', '') : ''}`} />
           </Button>
         )}
         
@@ -507,6 +533,17 @@ function TodoItemComponent({
           <Trash2 className="h-4 w-4" />
         </Button>
       </motion.div>
+      
+      {difficultyHint && !todo.completed && (
+        <motion.div 
+          className="ml-8 mt-1 text-xs text-muted-foreground italic"
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          {difficultyHint}
+        </motion.div>
+      )}
       
       <AnimatePresence>
         {isExpanded && renderSubtask && todo.subtasks && todo.subtasks.length > 0 && (

@@ -24,6 +24,7 @@ const BaseTodoSchema = z.object({
   recurringPattern: RecurringPatternSchema.optional(),
   isRecurring: z.boolean().optional(),
   parentRecurringId: z.number().optional(),
+  difficulty: z.enum(['easy', 'normal', 'hard']).optional(),
 });
 
 export type TodoInput = z.infer<typeof BaseTodoSchema>;

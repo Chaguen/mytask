@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext } from 'react';
 import { useTodos, ViewMode } from '@/hooks/useTodos';
-import { Todo, RecurringPattern } from '@/types/todo';
+import { Todo, RecurringPattern, Difficulty } from '@/types/todo';
 import { TodoPath } from '@/types/todo-tree';
 
 interface TodoContextType {
@@ -25,6 +25,7 @@ interface TodoContextType {
   updateTodoText: (id: number, text: string, parentIds?: TodoPath) => void;
   updateTodoDueDate: (id: number, dueDate: string | undefined, parentIds?: TodoPath) => void;
   updateRecurring: (id: number, pattern: RecurringPattern | undefined, parentIds?: TodoPath) => void;
+  updateDifficulty: (id: number, difficulty: Difficulty | undefined, parentIds?: TodoPath) => void;
   setTodoEditing: (id: number, isEditing: boolean, parentIds?: TodoPath) => void;
   clearCompleted: () => void;
   copyTodo: (id: number, parentIds?: TodoPath) => void;
