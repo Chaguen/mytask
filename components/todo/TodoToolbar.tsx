@@ -91,7 +91,7 @@ export function TodoToolbar({
           {view === 'list' ? <Calendar className="h-4 w-4" /> : <List className="h-4 w-4" />}
         </Button>
 
-        {onToggleTimerSidebar && hasActiveTimer && (
+        {onToggleTimerSidebar && (
           <Button
             variant="ghost"
             size="icon"
@@ -99,7 +99,7 @@ export function TodoToolbar({
             className="h-8 w-8"
             title="타이머 통계"
           >
-            <Timer className="h-4 w-4 text-red-500" />
+            <Timer className={`h-4 w-4 ${hasActiveTimer ? 'text-red-500' : ''}`} />
           </Button>
         )}
       </div>
