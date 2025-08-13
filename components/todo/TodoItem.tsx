@@ -12,7 +12,7 @@ import { useTodoStyles, useTodoKeyboardShortcuts } from "@/hooks/useTodoStyles";
 import { formatCompletionTime, getFullDateTime } from "@/utils/date-helpers";
 import { formatDueDate, getDueDateColor, getQuickDates, formatDateForInput } from "@/utils/date-utils";
 import { formatDuration } from "@/utils/timer-utils";
-import { getDifficultyBadgeColor, getDifficultyEmoji, getNextDifficulty, shouldSuggestSubtasks, getSubtaskSuggestion } from "@/utils/difficulty-utils";
+import { getDifficultyBadgeColor, getDifficultyEmoji, getDifficultyLabel, getNextDifficulty, shouldSuggestSubtasks, getSubtaskSuggestion } from "@/utils/difficulty-utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, addWeeks, addMonths } from "date-fns";
 import {
@@ -273,7 +273,7 @@ function TodoItemComponent({
           </Button>
         )}
         
-        {onUpdateDifficulty && (
+        {onUpdateDifficulty && !todo.completed && (
           <Button
             variant="ghost"
             size="icon"
@@ -283,9 +283,9 @@ function TodoItemComponent({
             }}
             className={`h-8 w-8 ${todo.difficulty ? getDifficultyBadgeColor(todo.difficulty).replace('bg-', 'hover:bg-').replace('-500', '-100') : ''}`}
             aria-label="Set difficulty"
-            title={`난이도: ${todo.difficulty ? getDifficultyEmoji(todo.difficulty) : '설정 안됨'}`}
+            title={`난이도: ${todo.difficulty ? getDifficultyLabel(todo.difficulty) : '설정 안됨'} (클릭하여 변경)`}
           >
-            <Circle className={`h-4 w-4 ${todo.difficulty ? getDifficultyBadgeColor(todo.difficulty).replace('bg-', 'text-').replace(' text-white', '') : ''}`} />
+            <Circle className={`h-4 w-4 ${todo.difficulty ? getDifficultyBadgeColor(todo.difficulty).replace('bg-', 'text-').replace(' text-white', '') : 'text-muted-foreground'}`} />
           </Button>
         )}
         
