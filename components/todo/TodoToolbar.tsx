@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar, List, Star, Eye, EyeOff, CheckCircle2, Timer, CalendarDays, Infinity } from "lucide-react";
+import { Calendar, List, Star, Eye, EyeOff, Timer, CalendarDays, Infinity } from "lucide-react";
 import { format } from "date-fns";
-import { ko } from "date-fns/locale";
 import { ViewMode } from "@/hooks/useTodos";
 
 interface TodoToolbarProps {
@@ -49,117 +48,70 @@ export function TodoToolbar({
     return () => clearInterval(timer);
   }, []);
   return (
-    <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex items-center gap-2">
-        <div className="flex items-center rounded-lg border bg-muted p-1">
-          <Button
-            variant={view === 'list' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => onViewChange('list')}
-            className="h-8 px-3"
-          >
-            <List className="h-4 w-4 mr-2" />
-            리스트
-          </Button>
-          <Button
-            variant={view === 'calendar' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => onViewChange('calendar')}
-            className="h-8 px-3"
-          >
-            <Calendar className="h-4 w-4 mr-2" />
-            캘린더
-          </Button>
-        </div>
-
-        <div className="h-8 w-px bg-border" />
-        
+    <div className="flex items-center justify-between px-4 py-2 border-b">
+      {/* 왼쪽: 필수 토글만 */}
+      <div className="flex items-center gap-1">
         <Button
-          variant={viewMode === 'today' ? "secondary" : "ghost"}
-          size="sm"
+          variant={viewMode === 'today' ? "default" : "ghost"}
+          size="icon"
           onClick={onToggleViewMode}
-          className="h-8 px-3"
+          className="h-8 w-8"
+          title={viewMode === 'today' ? '전체 보기' : '오늘만 보기'}
         >
-          {viewMode === 'today' ? (
-            <CalendarDays className="h-4 w-4 mr-2" />
-          ) : (
-            <Infinity className="h-4 w-4 mr-2" />
-          )}
-          {viewMode === 'today' ? '오늘' : '전체'}
+          {viewMode === 'today' ? <CalendarDays className="h-4 w-4" /> : <Infinity className="h-4 w-4" />}
         </Button>
         
         <Button
-          variant={showOnlyFocusTasks ? "secondary" : "ghost"}
-          size="sm"
+          variant={showOnlyFocusTasks ? "default" : "ghost"}
+          size="icon"
           onClick={onToggleShowOnlyFocusTasks}
-          className="h-8 px-3"
+          className="h-8 w-8"
+          title={`집중 모드 ${stats.focusTasksCount > 0 ? `(${stats.focusTasksCount})` : ''}`}
         >
-          <Star className="h-4 w-4 mr-2" />
-          집중 모드
-          {stats.focusTasksCount > 0 && (
-            <span className="ml-2 rounded-full bg-yellow-500 px-1.5 py-0.5 text-xs text-white">
-              {stats.focusTasksCount}
-            </span>
-          )}
+          <Star className={`h-4 w-4 ${stats.focusTasksCount > 0 ? 'fill-current' : ''}`} />
         </Button>
 
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
           onClick={onToggleShowCompleted}
-          className="h-8 px-3"
+          className="h-8 w-8"
+          title={showCompleted ? '완료 숨기기' : '완료 보기'}
         >
-          {showCompleted ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
-          {showCompleted ? '완료 숨기기' : '완료 보기'}
+          {showCompleted ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
         </Button>
 
-        {onToggleTimerSidebar && (
-          <>
-            <div className="h-8 w-px bg-border" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onToggleTimerSidebar}
-              className={`h-8 px-3 ${hasActiveTimer ? 'text-red-500' : ''}`}
-            >
-              <Timer className="h-4 w-4 mr-2" />
-              타이머 통계
-              {hasActiveTimer && (
-                <span className="ml-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              )}
-            </Button>
-          </>
+        <Button
+          variant={view === 'calendar' ? "default" : "ghost"}
+          size="icon"
+          onClick={() => onViewChange(view === 'list' ? 'calendar' : 'list')}
+          className="h-8 w-8"
+          title={view === 'list' ? '캘린더 보기' : '리스트 보기'}
+        >
+          {view === 'list' ? <Calendar className="h-4 w-4" /> : <List className="h-4 w-4" />}
+        </Button>
+
+        {onToggleTimerSidebar && hasActiveTimer && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleTimerSidebar}
+            className="h-8 w-8"
+            title="타이머 통계"
+          >
+            <Timer className="h-4 w-4 text-red-500" />
+          </Button>
         )}
       </div>
 
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <div className="flex flex-col">
-              <span className="text-xs text-muted-foreground">오늘 완료</span>
-              <span className="text-sm font-semibold text-foreground">{stats.todayCompleted}개</span>
-            </div>
-          </div>
-          
-          <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground">전체 진행</span>
-            <span className="text-sm font-semibold text-foreground">
-              {stats.completed}/{stats.total}
-            </span>
-          </div>
-        </div>
-        
-        <div className="h-10 w-px bg-border" />
-        
-        <div className="flex flex-col items-end">
-          <div className="text-lg font-semibold text-foreground">
-            {format(currentTime, 'a h:mm:ss', { locale: ko })}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {format(currentTime, 'yyyy년 M월 d일 EEEE', { locale: ko })}
-          </div>
-        </div>
+      {/* 오른쪽: 시계와 진행률만 */}
+      <div className="flex items-center gap-4 text-sm">
+        <span className="text-muted-foreground">
+          {stats.completed}/{stats.total}
+        </span>
+        <span className="font-medium">
+          {format(currentTime, 'HH:mm')}
+        </span>
       </div>
     </div>
   );
