@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Todo, RecurringPattern } from '@/types/todo';
+import { Todo, RecurringPattern, Difficulty } from '@/types/todo';
 import { TodoPath, MAX_TODO_DEPTH } from '@/types/todo-tree';
 import { useTodoAPI } from './useTodoAPI';
 import { useExpandedState } from './useExpandedState';
@@ -324,11 +324,35 @@ export function useTodos() {
     };
     
     const newTodos = parentIds && parentIds.length > 0
-      ? updateTodoAtPath(todos, parentIds, parent => ({
+      ? (updateTodoAtPath(todos, parentIds, parent => ({
           ...parent,
           subtasks: updateTodo(parent.subtasks || []),
-        })).value || todos
+        })).value || todos)
       : updateTodo(todos);
+    
+    setTodos(newTodos);
+    debouncedSave(newTodos);
+  }, [todos, debouncedSave]);
+
+  const updateDifficultyHandler = useCallback((id: number, difficulty: Difficulty | undefined, parentIds?: TodoPath) => {
+    // Simple recursive update that works for all levels
+    const updateTodo = (todoList: Todo[]): Todo[] => {
+      return todoList.map(t => {
+        if (t.id === id) {
+          return { ...t, difficulty };
+        }
+        if (t.subtasks) {
+          return {
+            ...t,
+            subtasks: updateTodo(t.subtasks),
+          };
+        }
+        return t;
+      });
+    };
+    
+    // Always use the simple recursive approach
+    const newTodos = updateTodo(todos);
     
     setTodos(newTodos);
     debouncedSave(newTodos);
@@ -422,6 +446,7 @@ export function useTodos() {
     updateTodoText: updateTodoTextHandler,
     updateTodoDueDate: updateTodoDueDateHandler,
     updateRecurring: updateRecurringHandler,
+    updateDifficulty: updateDifficultyHandler,
     setTodoEditing: setTodoEditingHandler,
     clearCompleted,
     copyTodo,

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, Plus, ChevronRight, Copy, Check, Star, Calendar, Timer, Pause, RefreshCw } from "lucide-react";
-import { Todo, RecurringPattern } from "@/types/todo";
+import { Todo, RecurringPattern, Difficulty } from "@/types/todo";
 import { TodoPath } from "@/types/todo-tree";
 import { getRecurringDisplayText } from "@/utils/recurring-utils";
 import { EditableTodoText } from "./EditableTodoText";
@@ -12,6 +12,7 @@ import { useTodoStyles, useTodoKeyboardShortcuts } from "@/hooks/useTodoStyles";
 import { formatCompletionTime, getFullDateTime } from "@/utils/date-helpers";
 import { formatDueDate, getDueDateColor, getQuickDates, formatDateForInput } from "@/utils/date-utils";
 import { formatDuration } from "@/utils/timer-utils";
+import { getNextDifficulty } from "@/utils/difficulty-utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, addWeeks, addMonths } from "date-fns";
 import {
@@ -42,6 +43,7 @@ interface TodoItemProps {
   onSetEditing: (id: number, isEditing: boolean, parentIds?: TodoPath) => void;
   onUpdateDueDate?: (id: number, dueDate: string | undefined, parentIds?: TodoPath) => void;
   onUpdateRecurring?: (id: number, pattern: RecurringPattern | undefined, parentIds?: TodoPath) => void;
+  onUpdateDifficulty?: (id: number, difficulty: Difficulty | undefined, parentIds?: TodoPath) => void;
   onToggleTimer?: (id: number, text: string, parentIds?: TodoPath) => void;
   todoTimeSpent?: number;
   renderSubtask?: (parentTodo: Todo, parentIds: TodoPath) => React.ReactNode;
@@ -68,6 +70,7 @@ function TodoItemComponent({
   onSetEditing,
   onUpdateDueDate,
   onUpdateRecurring,
+  onUpdateDifficulty,
   onToggleTimer,
   todoTimeSpent = 0,
   renderSubtask,
@@ -186,6 +189,7 @@ function TodoItemComponent({
           </span>
         )}
         
+        
         <motion.div 
           className={styles.text.className}
           animate={{
@@ -206,6 +210,19 @@ function TodoItemComponent({
                 onAddSibling={onAddSibling ? () => onAddSibling(todo.id, parentIds) : undefined}
               />
             </div>
+            {todo.difficulty && !todo.completed && (
+              <div className="flex items-center gap-1 ml-6 mt-0.5">
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium whitespace-nowrap ${
+                  todo.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
+                  todo.difficulty === 'normal' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-red-100 text-red-700'
+                }`}>
+                  {todo.difficulty === 'easy' ? '쉬움' :
+                   todo.difficulty === 'normal' ? '보통' :
+                   '어려움'}
+                </span>
+              </div>
+            )}
             {todo.completed && todo.completedAt && (
               <div className="flex items-center gap-1 ml-6 mt-1">
                 <Check className="h-3 w-3 text-muted-foreground" />
@@ -260,6 +277,32 @@ function TodoItemComponent({
             ) : (
               <Timer className="h-4 w-4" />
             )}
+          </Button>
+        )}
+        
+        {!todo.completed && onUpdateDifficulty && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              const nextDiff = getNextDifficulty(todo.difficulty);
+              onUpdateDifficulty(todo.id, nextDiff, parentIds);
+            }}
+            className="h-8 w-8"
+            aria-label="Set difficulty"
+            title="난이도 설정 (클릭하여 변경)"
+          >
+            <span className={`text-sm font-bold ${
+              todo.difficulty === 'easy' ? 'text-green-600' :
+              todo.difficulty === 'normal' ? 'text-yellow-600' :
+              todo.difficulty === 'hard' ? 'text-red-600' :
+              'text-gray-400'
+            }`}>
+              {todo.difficulty === 'easy' ? 'E' :
+               todo.difficulty === 'normal' ? 'N' :
+               todo.difficulty === 'hard' ? 'H' :
+               '?'}
+            </span>
           </Button>
         )}
         
@@ -507,6 +550,7 @@ function TodoItemComponent({
           <Trash2 className="h-4 w-4" />
         </Button>
       </motion.div>
+      
       
       <AnimatePresence>
         {isExpanded && renderSubtask && todo.subtasks && todo.subtasks.length > 0 && (

@@ -1,5 +1,7 @@
 export type RecurringType = 'daily' | 'weekly' | 'monthly' | 'weekdays' | 'custom';
 
+export type Difficulty = 'easy' | 'normal' | 'hard';
+
 export interface RecurringPattern {
   type: RecurringType;
   interval?: number; // Every N days/weeks/months
@@ -24,6 +26,7 @@ export interface BaseTodo {
   recurringPattern?: RecurringPattern; // Recurring task configuration
   isRecurring?: boolean; // Flag for recurring tasks
   parentRecurringId?: number; // ID of the original recurring task
+  difficulty?: Difficulty; // Task difficulty level
 }
 
 export interface Todo extends BaseTodo {
