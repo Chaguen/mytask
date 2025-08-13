@@ -129,6 +129,15 @@ function TodoItemComponent({
     onToggle(todo.id, parentIds);
   };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('application/json', JSON.stringify({
+      id: todo.id,
+      text: todo.text,
+      completed: todo.completed
+    }));
+  };
+
   // Determine focus mode styling
   const getFocusModeStyle = () => {
     if (!isInFocusMode) return '';
@@ -142,8 +151,10 @@ function TodoItemComponent({
 
   return (
     <motion.div 
-      className={`${styles.container.className} ${getFocusModeStyle()}`} 
+      className={`${styles.container.className} ${getFocusModeStyle()} ${!todo.completed ? 'cursor-move' : ''}`} 
       onKeyDown={handleKeyDown}
+      draggable={!todo.completed}
+      onDragStart={handleDragStart}
       layout
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}

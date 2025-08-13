@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { TodoList } from "@/components/todo/TodoList";
 import { CalendarView } from "@/components/todo/CalendarView";
+import { TimeboxView } from "@/components/todo/TimeboxView";
 import { TodoToolbar } from "@/components/todo/TodoToolbar";
 import { TodoErrorBoundary } from "@/components/todo/TodoErrorBoundary";
 import { FloatingTimer } from "@/components/timer/FloatingTimer";
@@ -26,7 +27,7 @@ export default function Home() {
   
   const { activeTimer, stopTimer, todaySessions } = useTimerContext();
   
-  const [view, setView] = useState<'list' | 'calendar'>('list');
+  const [view, setView] = useState<'list' | 'calendar' | 'timebox'>('list');
   const [showTimerSidebar, setShowTimerSidebar] = useState(false);
   
   return (
@@ -49,12 +50,14 @@ export default function Home() {
         <TodoErrorBoundary>
           {view === 'list' ? (
             <TodoList />
-          ) : (
+          ) : view === 'calendar' ? (
             <CalendarView 
               todos={todos}
               onToggleTodo={toggleTodo}
               onEditTodo={(id, parentIds) => setTodoEditing(id, true, parentIds)}
             />
+          ) : (
+            <TimeboxView />
           )}
         </TodoErrorBoundary>
       </main>

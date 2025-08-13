@@ -29,6 +29,15 @@ export function FloatingTimer({ activeTimer, onStop }: FloatingTimerProps) {
     const interval = setInterval(() => {
       const elapsed = Date.now() - new Date(activeTimer.startedAt).getTime();
       setElapsedTime(elapsed);
+      
+      // 25분 타임박스 알림
+      if (elapsed >= 25 * 60 * 1000 && elapsed < 25 * 60 * 1000 + 1000) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('🍅 타임박스 완료!', {
+            body: `${activeTimer.todoText} - 25분 완료! 5분 휴식하세요.`,
+          });
+        }
+      }
     }, 1000);
 
     return () => clearInterval(interval);
@@ -79,8 +88,15 @@ export function FloatingTimer({ activeTimer, onStop }: FloatingTimerProps) {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <div className="text-2xl font-mono font-bold">
-                    {formatElapsedTime(elapsedTime)}
+                  <div className="flex flex-col">
+                    <div className="text-2xl font-mono font-bold">
+                      {formatElapsedTime(elapsedTime)}
+                    </div>
+                    {elapsedTime < 25 * 60 * 1000 && (
+                      <div className="text-xs text-muted-foreground">
+                        타임박스: {Math.max(0, 25 - Math.floor(elapsedTime / 60000))}분 남음
+                      </div>
+                    )}
                   </div>
                   
                   <Button
