@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar, List, Star, Eye, EyeOff, Timer, CalendarDays, Infinity } from "lucide-react";
+import { Calendar, List, Star, Eye, EyeOff, Timer, CalendarDays, Infinity, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { ViewMode } from "@/hooks/useTodos";
 
 interface TodoToolbarProps {
-  view: 'list' | 'calendar';
-  onViewChange: (view: 'list' | 'calendar') => void;
+  view: 'list' | 'calendar' | 'timebox';
+  onViewChange: (view: 'list' | 'calendar' | 'timebox') => void;
   showCompleted: boolean;
   onToggleShowCompleted: () => void;
   showOnlyFocusTasks: boolean;
@@ -82,13 +82,23 @@ export function TodoToolbar({
         </Button>
 
         <Button
-          variant={view === 'calendar' ? "default" : "ghost"}
+          variant={view === 'list' ? "ghost" : "default"}
           size="icon"
-          onClick={() => onViewChange(view === 'list' ? 'calendar' : 'list')}
+          onClick={() => {
+            if (view === 'list') onViewChange('timebox');
+            else if (view === 'timebox') onViewChange('calendar');
+            else onViewChange('list');
+          }}
           className="h-8 w-8"
-          title={view === 'list' ? '캘린더 보기' : '리스트 보기'}
+          title={
+            view === 'list' ? '타임박스 보기' : 
+            view === 'timebox' ? '캘린더 보기' : 
+            '리스트 보기'
+          }
         >
-          {view === 'list' ? <Calendar className="h-4 w-4" /> : <List className="h-4 w-4" />}
+          {view === 'list' ? <Clock className="h-4 w-4" /> : 
+           view === 'timebox' ? <Calendar className="h-4 w-4" /> : 
+           <List className="h-4 w-4" />}
         </Button>
 
         {onToggleTimerSidebar && (
