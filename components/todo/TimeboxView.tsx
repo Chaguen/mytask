@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
@@ -17,16 +17,43 @@ interface TimeBox {
 
 export function TimeboxView() {
   const { visibleTodos, toggleTodo } = useTodoContext();
-  const [timeboxes, setTimeboxes] = useState<TimeBox[]>([
-    { id: '1', startTime: '09:00', endTime: '10:00', todos: [] },
-    { id: '2', startTime: '10:00', endTime: '11:00', todos: [] },
-    { id: '3', startTime: '11:00', endTime: '12:00', todos: [] },
-    { id: '4', startTime: '14:00', endTime: '15:00', todos: [] },
-    { id: '5', startTime: '15:00', endTime: '16:00', todos: [] },
-    { id: '6', startTime: '16:00', endTime: '17:00', todos: [] },
-  ]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
+  // 24시간 30분 단위 타임박스 생성
+  const generateTimeboxes = (): TimeBox[] => {
+    const boxes: TimeBox[] = [];
+    for (let hour = 0; hour < 24; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const startHour = hour.toString().padStart(2, '0');
+        const startMinute = minute.toString().padStart(2, '0');
+        const endHour = minute === 30 ? (hour + 1).toString().padStart(2, '0') : hour.toString().padStart(2, '0');
+        const endMinute = minute === 30 ? '00' : '30';
+        
+        boxes.push({
+          id: `${hour}-${minute}`,
+          startTime: `${startHour}:${startMinute}`,
+          endTime: hour === 23 && minute === 30 ? '00:00' : `${endHour}:${endMinute}`,
+          todos: []
+        });
+      }
+    }
+    return boxes;
+  };
+  
+  const [timeboxes, setTimeboxes] = useState<TimeBox[]>(generateTimeboxes());
   const [draggedTodo, setDraggedTodo] = useState<Todo | null>(null);
+  
+  // 현재 시간으로 자동 스크롤
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes() < 30 ? 0 : 30;
+      const index = currentHour * 2 + (currentMinute / 30);
+      const elementHeight = 50; // 대략적인 높이
+      scrollContainerRef.current.scrollTop = index * elementHeight - 200;
+    }
+  }, []);
 
   const handleDragStart = (e: React.DragEvent, todo: Todo) => {
     setDraggedTodo(todo);
@@ -84,60 +111,70 @@ export function TimeboxView() {
   );
 
   return (
-    <div className="flex gap-4 h-[calc(100vh-8rem)]">
+    <div className="flex gap-4 h-[calc(100vh-8rem)] max-w-7xl mx-auto w-full">
       {/* 타임박스 영역 */}
-      <div className="flex-1 overflow-y-auto">
-        <h3 className="font-bold mb-4">오늘의 타임박스</h3>
-        <div className="space-y-2">
-          {timeboxes.map(box => (
-            <Card
-              key={box.id}
-              className="p-3"
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, box.id)}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-sm font-bold">
-                  {box.startTime} - {box.endTime}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {box.todos.length}개 할일
-                </span>
-              </div>
-              
-              <div className="min-h-[60px] space-y-1">
-                {box.todos.map(todoId => {
-                  const todo = getTodoById(todoId);
-                  if (!todo) return null;
-                  
-                  return (
-                    <div
-                      key={todoId}
-                      className="flex items-center justify-between p-2 bg-muted rounded text-sm"
-                    >
-                      <span className={todo.completed ? 'line-through opacity-50' : ''}>
-                        {todo.text}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5"
-                        onClick={() => removeTodoFromBox(box.id, todoId)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  );
-                })}
+      <div className="flex-1 overflow-y-auto" ref={scrollContainerRef}>
+        <div className="sticky top-0 bg-background z-10 pb-2 mb-2 border-b">
+          <h3 className="font-bold">24시간 타임박스</h3>
+        </div>
+        <div className="space-y-1">
+          {timeboxes.map(box => {
+            const isCurrentTime = () => {
+              const now = new Date();
+              const currentHour = now.getHours().toString().padStart(2, '0');
+              const currentMinute = now.getMinutes() < 30 ? '00' : '30';
+              return box.startTime === `${currentHour}:${currentMinute}`;
+            };
+            
+            return (
+              <div
+                key={box.id}
+                className={`flex gap-2 p-2 border rounded-lg transition-colors ${
+                  isCurrentTime() ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : ''
+                } ${box.todos.length > 0 ? 'bg-muted/50' : ''}`}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, box.id)}
+              >
+                <div className="w-20 flex-shrink-0">
+                  <span className={`font-mono text-xs ${
+                    isCurrentTime() ? 'font-bold text-blue-600' : 'text-muted-foreground'
+                  }`}>
+                    {box.startTime}
+                  </span>
+                </div>
                 
-                {box.todos.length === 0 && (
-                  <div className="text-xs text-muted-foreground text-center py-4">
-                    여기로 할일을 드래그하세요
-                  </div>
-                )}
+                <div className="flex-1 min-h-[30px] flex flex-wrap gap-1">
+                  {box.todos.map(todoId => {
+                    const todo = getTodoById(todoId);
+                    if (!todo) return null;
+                    
+                    return (
+                      <div
+                        key={todoId}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 rounded text-xs"
+                      >
+                        <span className={todo.completed ? 'line-through opacity-50' : ''}>
+                          {todo.text}
+                        </span>
+                        <button
+                          onClick={() => removeTodoFromBox(box.id, todoId)}
+                          className="hover:text-destructive"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                  
+                  {box.todos.length === 0 && (
+                    <div className="text-[10px] text-muted-foreground self-center">
+                      드래그하여 추가
+                    </div>
+                  )}
+                </div>
               </div>
-            </Card>
-          ))}
+            );
+          })}
         </div>
       </div>
 
