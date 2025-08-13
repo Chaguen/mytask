@@ -47,3 +47,7 @@ todos.json.backup
 
 # timer sessions data file
 timer-sessions.json
+
+# timeboxes data file
+timeboxes.json
+timeboxes.json.backup

@@ -1,112 +1,76 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ChevronDown, Clock, Search, Filter } from "lucide-react";
+import { ChevronRight, ChevronDown, Clock, Search, Calendar } from "lucide-react";
 import { useTodoContext } from "@/contexts/TodoContext";
 import { Todo } from "@/types/todo";
 import { Input } from "@/components/ui/input";
+import { useTimeboxes } from "@/hooks/useTimeboxes";
+import { format } from "date-fns";
+import { TimeboxItem } from "@/types/timebox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-interface TimeBox {
-  id: string;
-  time: string;
-  hour: number;
-  minute: number;
-  todos: number[];
-}
+const HOUR_HEIGHT = 60; // pixels per hour
+const MINUTE_HEIGHT = HOUR_HEIGHT / 60;
 
 export function TimeboxView() {
   const { visibleTodos } = useTodoContext();
+  const { 
+    timeboxItems, 
+    loading, 
+    defaultDuration,
+    setDefaultDuration,
+    addTimeboxItem, 
+    removeTimeboxItem,
+    moveTimeboxItem,
+    resizeTimeboxItem,
+    getItemsForDate 
+  } = useTimeboxes();
+  
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [expandedTodos, setExpandedTodos] = useState<Set<number>>(new Set());
   const [showTodoList, setShowTodoList] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDifficulty, setFilterDifficulty] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [draggedItem, setDraggedItem] = useState<TimeboxItem | null>(null);
+  const [resizingItem, setResizingItem] = useState<TimeboxItem | null>(null);
+  const [isDraggingNew, setIsDraggingNew] = useState(false);
+  const [dragStartY, setDragStartY] = useState(0);
+  const [isDraggingExisting, setIsDraggingExisting] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [previewPosition, setPreviewPosition] = useState<{ time: string; duration: number } | null>(null);
+  const [draggedTodoInfo, setDraggedTodoInfo] = useState<{ id: number; text: string } | null>(null);
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   
-  // 24시간 30분 단위 타임박스 생성
-  const generateTimeboxes = (): TimeBox[] => {
-    const boxes: TimeBox[] = [];
-    for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        boxes.push({
-          id: `${hour}-${minute}`,
-          time,
-          hour,
-          minute,
-          todos: []
-        });
-      }
-    }
-    return boxes;
-  };
+  // Get items for selected date
+  const todayItems = useMemo(() => {
+    return getItemsForDate(selectedDate);
+  }, [getItemsForDate, selectedDate, timeboxItems]);
   
-  const [timeboxes, setTimeboxes] = useState<TimeBox[]>(generateTimeboxes());
-  const [draggedOverBox, setDraggedOverBox] = useState<string | null>(null);
-  
-  // 현재 시간으로 자동 스크롤
+  // Auto scroll to current time on mount
   useEffect(() => {
     if (scrollContainerRef.current) {
       const now = new Date();
       const currentHour = now.getHours();
-      const currentMinute = now.getMinutes() < 30 ? 0 : 30;
-      const index = currentHour * 2 + (currentMinute / 30);
-      const elementHeight = 100; // 각 타임박스의 높이
-      scrollContainerRef.current.scrollTop = index * elementHeight - 200;
+      const scrollPosition = currentHour * HOUR_HEIGHT - 200;
+      scrollContainerRef.current.scrollTop = scrollPosition;
     }
   }, []);
 
-  // 현재 시간 업데이트
+  // Current time indicator update
   const [currentTime, setCurrentTime] = useState(new Date());
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
-
-  const handleDragOver = (e: React.DragEvent, boxId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDraggedOverBox(boxId);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDraggedOverBox(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, boxId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDraggedOverBox(null);
-    
-    try {
-      const todoData = e.dataTransfer.getData('application/json');
-      if (!todoData) return;
-      
-      const { id } = JSON.parse(todoData);
-      
-      setTimeboxes(prev => prev.map(box => {
-        if (box.id === boxId) {
-          if (!box.todos.includes(id)) {
-            return { ...box, todos: [...box.todos, id] };
-          }
-        } else {
-          return { ...box, todos: box.todos.filter(todoId => todoId !== id) };
-        }
-        return box;
-      }));
-    } catch (error) {
-      console.error('Failed to handle drop:', error);
-    }
-  };
-
-  const removeTodoFromBox = (boxId: string, todoId: number) => {
-    setTimeboxes(prev => prev.map(box => 
-      box.id === boxId 
-        ? { ...box, todos: box.todos.filter(id => id !== todoId) }
-        : box
-    ));
-  };
 
   const getTodoById = (id: number): Todo | undefined => {
     const findTodo = (todos: Todo[]): Todo | undefined => {
@@ -146,10 +110,124 @@ export function TimeboxView() {
     });
   };
 
-  // 검색 및 필터링된 할일 목록
+  // Calculate position from time
+  const timeToPosition = (time: string): number => {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * HOUR_HEIGHT + minutes * MINUTE_HEIGHT;
+  };
+
+  // Calculate time from position
+  const positionToTime = (y: number): string => {
+    const totalMinutes = Math.max(0, Math.min(23 * 60 + 59, Math.round(y / MINUTE_HEIGHT)));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = Math.round((totalMinutes % 60) / 15) * 15; // Round to 15 min intervals
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  };
+
+  // Handle dropping new todo
+  const handleDropNewTodo = (e: React.DragEvent, time?: string) => {
+    e.preventDefault();
+    setIsDraggingNew(false);
+    setPreviewPosition(null);
+    setDraggedTodoInfo(null);
+    
+    try {
+      const todoData = e.dataTransfer.getData('application/json');
+      if (!todoData) return;
+      
+      const { id } = JSON.parse(todoData);
+      const rect = e.currentTarget.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      const startTime = time || positionToTime(y);
+      
+      addTimeboxItem(id, startTime, defaultDuration, selectedDate);
+    } catch (error) {
+      console.error('Failed to handle drop:', error);
+    }
+  };
+
+  // Handle moving existing item
+  const handleMoveItem = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingExisting(false);
+    setPreviewPosition(null);
+    setDragOffset({ x: 0, y: 0 });
+    
+    if (!draggedItem) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    // Use offset from drag start position
+    const y = e.clientY - rect.top - dragOffset.y;
+    const newTime = positionToTime(y);
+    
+    moveTimeboxItem(draggedItem.id, newTime);
+    setDraggedItem(null);
+  };
+
+  // Handle drag over for preview
+  const handleDragOverTimeline = (e: React.DragEvent) => {
+    e.preventDefault();
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    
+    let y: number;
+    if (draggedItem) {
+      // For existing items, use offset from drag start position
+      y = e.clientY - rect.top - dragOffset.y;
+    } else {
+      // For new items, use mouse position directly
+      y = e.clientY - rect.top;
+    }
+    
+    const time = positionToTime(y);
+    
+    if (draggedItem) {
+      setIsDraggingExisting(true);
+      setPreviewPosition({ time, duration: draggedItem.duration });
+    } else if (draggedTodoInfo) {
+      setIsDraggingNew(true);
+      setPreviewPosition({ time, duration: defaultDuration });
+    }
+  };
+
+  // Handle resize
+  const handleResizeStart = (e: React.MouseEvent, item: TimeboxItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    setResizingItem(item);
+    setDragStartY(e.clientY);
+    
+    // Create initial duration snapshot
+    const initialDuration = item.duration;
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - e.clientY;
+      const deltaMinutes = Math.round(deltaY / MINUTE_HEIGHT / 15) * 15;
+      const newDuration = Math.max(15, initialDuration + deltaMinutes);
+      
+      resizeTimeboxItem(item.id, newDuration);
+    };
+    
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      setResizingItem(null);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Filter todos
   const getFilteredTodos = (todos: Todo[]): Todo[] => {
     return todos.filter(todo => {
       if (todo.completed) return false;
+      
+      // Check if already in timebox
+      const isInTimebox = todayItems.some(item => item.todoId === todo.id);
+      if (isInTimebox) return false;
       
       const matchesSearch = !searchTerm || 
         todo.text.toLowerCase().includes(searchTerm.toLowerCase());
@@ -159,7 +237,6 @@ export function TimeboxView() {
       
       if (matchesSearch && matchesDifficulty) return true;
       
-      // 하위 항목도 검색
       if (todo.subtasks && todo.subtasks.length > 0) {
         return getFilteredTodos(todo.subtasks).length > 0;
       }
@@ -174,23 +251,26 @@ export function TimeboxView() {
     return filtered.map(todo => {
       const isExpanded = expandedTodos.has(todo.id);
       const hasSubtasks = todo.subtasks && todo.subtasks.length > 0;
-      const isInTimebox = timeboxes.some(box => box.todos.includes(todo.id));
       
       return (
         <div key={todo.id}>
           <div
-            className={`flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 group transition-colors ${
-              isInTimebox ? 'opacity-40' : ''
-            } ${!todo.completed ? 'cursor-move' : 'opacity-50'}`}
+            className={`flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 group transition-colors cursor-move`}
             style={{ paddingLeft: `${level * 20 + 8}px` }}
-            draggable={!todo.completed && !isInTimebox}
+            draggable
             onDragStart={(e) => {
-              e.dataTransfer.effectAllowed = 'move';
-              e.dataTransfer.setData('application/json', JSON.stringify({
+              e.dataTransfer.effectAllowed = 'copy';
+              const data = {
                 id: todo.id,
                 text: todo.text,
                 path: parentPath
-              }));
+              };
+              e.dataTransfer.setData('application/json', JSON.stringify(data));
+              setDraggedTodoInfo({ id: todo.id, text: todo.text });
+            }}
+            onDragEnd={() => {
+              setDraggedTodoInfo(null);
+              setPreviewPosition(null);
             }}
           >
             {hasSubtasks && (
@@ -208,11 +288,7 @@ export function TimeboxView() {
             )}
             {!hasSubtasks && <div className="w-4" />}
             
-            <span className={`text-sm flex-1 ${
-              todo.completed ? 'line-through text-muted-foreground' : ''
-            }`}>
-              {todo.text}
-            </span>
+            <span className="text-sm flex-1">{todo.text}</span>
             
             {todo.difficulty && (
               <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
@@ -222,12 +298,6 @@ export function TimeboxView() {
               }`}>
                 {todo.difficulty === 'easy' ? 'E' :
                  todo.difficulty === 'normal' ? 'N' : 'H'}
-              </span>
-            )}
-            
-            {isInTimebox && (
-              <span className="text-[10px] text-muted-foreground bg-primary/10 px-2 py-0.5 rounded">
-                배치됨
               </span>
             )}
           </div>
@@ -242,18 +312,20 @@ export function TimeboxView() {
     });
   };
 
-  const getCurrentTimeBox = () => {
-    const hour = currentTime.getHours();
-    const minute = currentTime.getMinutes() < 30 ? 0 : 30;
-    return `${hour}-${minute}`;
-  };
+  // Generate hour labels
+  const hours = Array.from({ length: 24 }, (_, i) => i);
 
-  const isWorkingHours = (hour: number) => hour >= 9 && hour < 18;
-  const currentBox = getCurrentTimeBox();
+  if (loading) {
+    return (
+      <div className="w-full h-[calc(100vh-8rem)] flex items-center justify-center">
+        <div className="text-muted-foreground">타임박스 데이터 로딩 중...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-[calc(100vh-8rem)] flex gap-4">
-      {/* 왼쪽: 할일 목록 */}
+      {/* Left: Todo list */}
       <div className={`bg-card border rounded-lg transition-all duration-300 flex-shrink-0 ${
         showTodoList ? 'w-80' : 'w-12'
       }`}>
@@ -276,7 +348,25 @@ export function TimeboxView() {
           
           {showTodoList && (
             <>
-              {/* 검색 및 필터 */}
+              {/* Duration selector */}
+              <div className="p-3 border-b">
+                <label className="text-xs text-muted-foreground">기본 작업 시간</label>
+                <Select value={defaultDuration.toString()} onValueChange={(v) => setDefaultDuration(Number(v))}>
+                  <SelectTrigger className="w-full mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="15">15분</SelectItem>
+                    <SelectItem value="30">30분</SelectItem>
+                    <SelectItem value="45">45분</SelectItem>
+                    <SelectItem value="60">1시간</SelectItem>
+                    <SelectItem value="90">1시간 30분</SelectItem>
+                    <SelectItem value="120">2시간</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Search and filter */}
               <div className="p-3 space-y-2 border-b">
                 <div className="relative">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -288,51 +378,17 @@ export function TimeboxView() {
                     className="pl-8 h-9 text-sm"
                   />
                 </div>
-                <div className="flex gap-1">
-                  <Button
-                    variant={filterDifficulty === null ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setFilterDifficulty(null)}
-                    className="h-7 text-xs flex-1"
-                  >
-                    전체
-                  </Button>
-                  <Button
-                    variant={filterDifficulty === 'easy' ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setFilterDifficulty('easy')}
-                    className="h-7 text-xs flex-1"
-                  >
-                    쉬움
-                  </Button>
-                  <Button
-                    variant={filterDifficulty === 'normal' ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setFilterDifficulty('normal')}
-                    className="h-7 text-xs flex-1"
-                  >
-                    보통
-                  </Button>
-                  <Button
-                    variant={filterDifficulty === 'hard' ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setFilterDifficulty('hard')}
-                    className="h-7 text-xs flex-1"
-                  >
-                    어려움
-                  </Button>
-                </div>
               </div>
               
-              {/* 할일 목록 */}
+              {/* Todo list */}
               <div className="flex-1 overflow-y-auto p-3">
                 <div className="text-xs text-muted-foreground mb-3">
-                  드래그하여 타임박스에 배치
+                  드래그하여 타임라인에 추가
                 </div>
                 {renderTodoTree(visibleTodos)}
                 {getFilteredTodos(visibleTodos).length === 0 && (
                   <div className="text-center text-sm text-muted-foreground mt-8">
-                    {searchTerm || filterDifficulty ? '검색 결과가 없습니다' : '할일이 없습니다'}
+                    {searchTerm ? '검색 결과가 없습니다' : '할일이 없습니다'}
                   </div>
                 )}
               </div>
@@ -341,115 +397,201 @@ export function TimeboxView() {
         </div>
       </div>
       
-      {/* 오른쪽: 타임박스 (세로 스크롤) */}
+      {/* Right: Timeline */}
       <div className="flex-1 bg-card border rounded-lg overflow-hidden">
         <div className="h-full flex flex-col">
-          <div className="p-4 border-b bg-muted/30">
-            <h3 className="font-bold text-lg flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              24시간 타임박스
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              {currentTime.toLocaleDateString('ko-KR', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric',
-                weekday: 'long' 
-              })}
-            </p>
+          {/* Header */}
+          <div className="p-4 border-b bg-muted/30 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                타임박스
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                {format(new Date(selectedDate), 'yyyy년 M월 d일 EEEE')}
+              </p>
+            </div>
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-40"
+            />
           </div>
           
+          {/* Timeline */}
           <div 
             ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto"
+            className="flex-1 overflow-y-auto relative"
           >
-            <div className="p-4 space-y-2">
-              {timeboxes.map(box => {
-                const isCurrentTime = box.id === currentBox;
-                const hasTodos = box.todos.length > 0;
-                const isWorking = isWorkingHours(box.hour);
-                
-                return (
+            <div className="flex">
+              {/* Hour labels */}
+              <div className="w-16 flex-shrink-0">
+                {hours.map(hour => (
                   <div
-                    key={box.id}
-                    className={`
-                      flex gap-4 min-h-[80px] p-3 rounded-lg border transition-all
-                      ${isCurrentTime ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 shadow-md' : 
-                        isWorking ? 'border-border bg-muted/10' : 'border-border'}
-                      ${hasTodos ? 'bg-primary/5' : ''}
-                      ${draggedOverBox === box.id ? 'ring-2 ring-primary bg-primary/10' : ''}
-                      hover:bg-muted/20
-                    `}
-                    onDragOver={(e) => handleDragOver(e, box.id)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, box.id)}
+                    key={hour}
+                    className="h-[60px] border-b border-border/50 text-xs text-muted-foreground px-2 py-1"
                   >
-                    {/* 시간 표시 */}
-                    <div className="w-16 flex-shrink-0">
-                      <span className={`font-mono text-sm font-medium ${
-                        isCurrentTime ? 'text-blue-600' : 'text-muted-foreground'
-                      }`}>
-                        {box.time}
-                      </span>
-                      {isCurrentTime && (
-                        <div className="text-[10px] text-blue-600 mt-1">현재</div>
-                      )}
-                    </div>
-                    
-                    {/* 할일 영역 */}
-                    <div className="flex-1 min-h-[50px]">
-                      {box.todos.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {box.todos.map(todoId => {
-                            const todo = getTodoById(todoId);
-                            if (!todo) return null;
-                            
-                            const path = getTodoPath(todoId);
-                            
-                            return (
-                              <div
-                                key={todoId}
-                                className="group bg-background border rounded-md p-2 flex-1 min-w-[200px] hover:shadow-sm transition-shadow"
-                              >
-                                {path && path.length > 0 && (
-                                  <div className="text-[10px] text-muted-foreground/70 mb-1">
-                                    {path.join(' › ')}
-                                  </div>
-                                )}
-                                <div className="flex items-start justify-between gap-2">
-                                  <span className="text-sm flex-1">
-                                    {todo.text}
-                                  </span>
-                                  <button
-                                    onClick={() => removeTodoFromBox(box.id, todoId)}
-                                    className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity mt-0.5"
-                                  >
-                                    ×
-                                  </button>
-                                </div>
-                                {todo.difficulty && (
-                                  <span className={`inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded ${
-                                    todo.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
-                                    todo.difficulty === 'normal' ? 'bg-yellow-100 text-yellow-700' :
-                                    'bg-red-100 text-red-700'
-                                  }`}>
-                                    {todo.difficulty === 'easy' ? '쉬움' :
-                                     todo.difficulty === 'normal' ? '보통' : '어려움'}
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center h-full text-xs text-muted-foreground/50">
-                          {draggedOverBox === box.id ? '여기에 놓기' : '드래그하여 추가'}
-                        </div>
-                      )}
+                    {hour.toString().padStart(2, '0')}:00
+                  </div>
+                ))}
+              </div>
+              
+              {/* Timeline grid */}
+              <div 
+                className="flex-1 relative"
+                onDragOver={handleDragOverTimeline}
+                onDragLeave={() => {
+                  setIsDraggingNew(false);
+                  setIsDraggingExisting(false);
+                  setPreviewPosition(null);
+                }}
+                onDrop={(e) => {
+                  if (draggedItem) {
+                    handleMoveItem(e);
+                  } else {
+                    handleDropNewTodo(e);
+                  }
+                }}
+              >
+                {/* Hour lines */}
+                {hours.map(hour => (
+                  <div
+                    key={hour}
+                    className="absolute w-full h-[60px] border-b border-border/50"
+                    style={{ top: `${hour * HOUR_HEIGHT}px` }}
+                  >
+                    {/* 30 minute line */}
+                    <div className="absolute w-full border-b border-border/20" style={{ top: '30px' }} />
+                  </div>
+                ))}
+                
+                {/* Current time indicator */}
+                {selectedDate === format(new Date(), 'yyyy-MM-dd') && (
+                  <div
+                    className="absolute w-full border-b-2 border-red-500 z-10"
+                    style={{
+                      top: `${currentTime.getHours() * HOUR_HEIGHT + currentTime.getMinutes() * MINUTE_HEIGHT}px`
+                    }}
+                  >
+                    <div className="absolute -left-16 -top-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded">
+                      {format(currentTime, 'HH:mm')}
                     </div>
                   </div>
-                );
-              })}
+                )}
+                
+                {/* Preview of drop position */}
+                {previewPosition && (
+                  <div
+                    className="absolute left-2 right-2 bg-primary/20 border-2 border-dashed border-primary/40 rounded-md pointer-events-none"
+                    style={{
+                      top: `${timeToPosition(previewPosition.time)}px`,
+                      height: `${previewPosition.duration * MINUTE_HEIGHT}px`,
+                      minHeight: '25px'
+                    }}
+                  >
+                    <div className="p-1.5 opacity-70">
+                      <div className="text-xs font-medium">
+                        {draggedTodoInfo?.text || draggedItem && getTodoById(draggedItem.todoId)?.text}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {previewPosition.time} - {format(
+                          new Date(2000, 0, 1, 
+                            parseInt(previewPosition.time.split(':')[0]), 
+                            parseInt(previewPosition.time.split(':')[1]) + previewPosition.duration
+                          ), 
+                          'HH:mm'
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Timebox items */}
+                {todayItems.map(item => {
+                  const todo = getTodoById(item.todoId);
+                  if (!todo) return null;
+                  
+                  const path = getTodoPath(item.todoId);
+                  const top = timeToPosition(item.startTime);
+                  const height = item.duration * MINUTE_HEIGHT;
+                  
+                  return (
+                    <div
+                      key={item.id}
+                      className={`absolute left-2 right-2 bg-primary/10 border-2 border-primary/30 rounded-md p-1.5 group hover:shadow-md transition-shadow ${
+                        isResizing && resizingItem?.id === item.id ? '' : 'cursor-move'
+                      }`}
+                      style={{
+                        top: `${top}px`,
+                        height: `${height}px`,
+                        minHeight: '25px',
+                        opacity: draggedItem?.id === item.id ? 0.5 : 1
+                      }}
+                      draggable={!isResizing}
+                      onDragStart={(e) => {
+                        if (isResizing) {
+                          e.preventDefault();
+                          return;
+                        }
+                        e.dataTransfer.effectAllowed = 'move';
+                        setDraggedItem(item);
+                        
+                        // Calculate offset from top of the item to where mouse clicked
+                        const itemRect = e.currentTarget.getBoundingClientRect();
+                        const offsetY = e.clientY - itemRect.top;
+                        setDragOffset({ x: 0, y: offsetY });
+                      }}
+                      onDragEnd={() => {
+                        setDraggedItem(null);
+                        setIsDraggingExisting(false);
+                        setPreviewPosition(null);
+                        setDragOffset({ x: 0, y: 0 });
+                      }}
+                    >
+                      {/* Delete button */}
+                      <button
+                        onClick={() => removeTimeboxItem(item.id)}
+                        className="absolute top-0.5 right-0.5 text-xs text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      >
+                        ×
+                      </button>
+                      
+                      {/* Content */}
+                      <div className="h-full overflow-hidden pr-4">
+                        {path && path.length > 0 && height > 40 && (
+                          <div className="text-[9px] leading-tight text-muted-foreground/70 truncate">
+                            {path.join(' › ')}
+                          </div>
+                        )}
+                        <div className="text-xs font-medium leading-tight line-clamp-2">{todo.text}</div>
+                        {height > 35 && (
+                          <div className="text-[10px] leading-tight text-muted-foreground mt-0.5">
+                            {item.startTime}-{format(
+                              new Date(2000, 0, 1, 
+                                parseInt(item.startTime.split(':')[0]), 
+                                parseInt(item.startTime.split(':')[1]) + item.duration
+                              ), 
+                              'HH:mm'
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Resize handle */}
+                      <div
+                        className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize hover:bg-primary/20 flex items-end justify-center"
+                        onMouseDown={(e) => handleResizeStart(e, item)}
+                        draggable={false}
+                      >
+                        <div className="w-8 h-1 bg-primary/30 rounded-full mb-0.5" />
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {/* Drop indicator - removed to prevent gray overlay */}
+              </div>
             </div>
           </div>
         </div>
