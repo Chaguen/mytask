@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Plus, ChevronRight, Copy, Check, Star, Calendar, Timer, Pause, RefreshCw, Circle } from "lucide-react";
+import { Trash2, Plus, ChevronRight, Copy, Check, Star, Calendar, Timer, Pause, RefreshCw } from "lucide-react";
 import { Todo, RecurringPattern, Difficulty } from "@/types/todo";
 import { TodoPath } from "@/types/todo-tree";
 import { getRecurringDisplayText } from "@/utils/recurring-utils";
@@ -12,7 +12,7 @@ import { useTodoStyles, useTodoKeyboardShortcuts } from "@/hooks/useTodoStyles";
 import { formatCompletionTime, getFullDateTime } from "@/utils/date-helpers";
 import { formatDueDate, getDueDateColor, getQuickDates, formatDateForInput } from "@/utils/date-utils";
 import { formatDuration } from "@/utils/timer-utils";
-import { getDifficultyBadgeColor, getDifficultyEmoji, getDifficultyLabel, getNextDifficulty, shouldSuggestSubtasks, getSubtaskSuggestion } from "@/utils/difficulty-utils";
+import { getNextDifficulty } from "@/utils/difficulty-utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, addDays, addWeeks, addMonths } from "date-fns";
 import {
@@ -86,7 +86,6 @@ function TodoItemComponent({
   const hasSubtasks = todo.subtasks && todo.subtasks.length > 0;
   const completedSubtasks = todo.subtasks?.filter(st => st.completed).length || 0;
   const totalSubtasks = todo.subtasks?.length || 0;
-  const difficultyHint = getSubtaskSuggestion(todo.difficulty, totalSubtasks);
 
   const styles = useTodoStyles({
     level,
@@ -190,11 +189,6 @@ function TodoItemComponent({
           </span>
         )}
         
-        {todo.difficulty && (
-          <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ml-1 ${getDifficultyBadgeColor(todo.difficulty)}`}>
-            {getDifficultyEmoji(todo.difficulty)}
-          </span>
-        )}
         
         <motion.div 
           className={styles.text.className}
@@ -216,6 +210,19 @@ function TodoItemComponent({
                 onAddSibling={onAddSibling ? () => onAddSibling(todo.id, parentIds) : undefined}
               />
             </div>
+            {todo.difficulty && !todo.completed && (
+              <div className="flex items-center gap-1 ml-6 mt-0.5">
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium whitespace-nowrap ${
+                  todo.difficulty === 'easy' ? 'bg-green-100 text-green-700' :
+                  todo.difficulty === 'normal' ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-red-100 text-red-700'
+                }`}>
+                  {todo.difficulty === 'easy' ? '쉬움' :
+                   todo.difficulty === 'normal' ? '보통' :
+                   '어려움'}
+                </span>
+              </div>
+            )}
             {todo.completed && todo.completedAt && (
               <div className="flex items-center gap-1 ml-6 mt-1">
                 <Check className="h-3 w-3 text-muted-foreground" />
@@ -273,7 +280,7 @@ function TodoItemComponent({
           </Button>
         )}
         
-        {onUpdateDifficulty && !todo.completed && (
+        {!todo.completed && onUpdateDifficulty && (
           <Button
             variant="ghost"
             size="icon"
@@ -281,11 +288,21 @@ function TodoItemComponent({
               const nextDiff = getNextDifficulty(todo.difficulty);
               onUpdateDifficulty(todo.id, nextDiff, parentIds);
             }}
-            className={`h-8 w-8 ${todo.difficulty ? getDifficultyBadgeColor(todo.difficulty).replace('bg-', 'hover:bg-').replace('-500', '-100') : ''}`}
+            className="h-8 w-8"
             aria-label="Set difficulty"
-            title={`난이도: ${todo.difficulty ? getDifficultyLabel(todo.difficulty) : '설정 안됨'} (클릭하여 변경)`}
+            title="난이도 설정 (클릭하여 변경)"
           >
-            <Circle className={`h-4 w-4 ${todo.difficulty ? getDifficultyBadgeColor(todo.difficulty).replace('bg-', 'text-').replace(' text-white', '') : 'text-muted-foreground'}`} />
+            <span className={`text-sm font-bold ${
+              todo.difficulty === 'easy' ? 'text-green-600' :
+              todo.difficulty === 'normal' ? 'text-yellow-600' :
+              todo.difficulty === 'hard' ? 'text-red-600' :
+              'text-gray-400'
+            }`}>
+              {todo.difficulty === 'easy' ? 'E' :
+               todo.difficulty === 'normal' ? 'N' :
+               todo.difficulty === 'hard' ? 'H' :
+               '?'}
+            </span>
           </Button>
         )}
         
@@ -534,16 +551,6 @@ function TodoItemComponent({
         </Button>
       </motion.div>
       
-      {difficultyHint && !todo.completed && (
-        <motion.div 
-          className="ml-8 mt-1 text-xs text-muted-foreground italic"
-          initial={{ opacity: 0, y: -5 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          {difficultyHint}
-        </motion.div>
-      )}
       
       <AnimatePresence>
         {isExpanded && renderSubtask && todo.subtasks && todo.subtasks.length > 0 && (

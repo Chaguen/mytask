@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "text": "상위 할일",
+    "completed": false,
+    "difficulty": "hard",
+    "subtasks": [
+      {
+        "id": 2,
+        "text": "하위 할일 1",
+        "completed": false,
+        "difficulty": "easy"
+      },
+      {
+        "id": 3,
+        "text": "하위 할일 2",
+        "completed": false,
+        "difficulty": "normal"
+      }
+    ]
+  }
+]

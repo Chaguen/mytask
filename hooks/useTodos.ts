@@ -335,6 +335,7 @@ export function useTodos() {
   }, [todos, debouncedSave]);
 
   const updateDifficultyHandler = useCallback((id: number, difficulty: Difficulty | undefined, parentIds?: TodoPath) => {
+    // Simple recursive update that works for all levels
     const updateTodo = (todoList: Todo[]): Todo[] => {
       return todoList.map(t => {
         if (t.id === id) {
@@ -350,12 +351,8 @@ export function useTodos() {
       });
     };
     
-    const newTodos = parentIds && parentIds.length > 0
-      ? (updateTodoAtPath(todos, parentIds, parent => ({
-          ...parent,
-          subtasks: updateTodo(parent.subtasks || []),
-        })).value || todos)
-      : updateTodo(todos);
+    // Always use the simple recursive approach
+    const newTodos = updateTodo(todos);
     
     setTodos(newTodos);
     debouncedSave(newTodos);
