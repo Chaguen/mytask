@@ -82,23 +82,33 @@ export function TodoToolbar({
         </Button>
 
         <Button
-          variant={view === 'list' ? "ghost" : "default"}
+          variant={view === 'list' ? "default" : "ghost"}
           size="icon"
-          onClick={() => {
-            if (view === 'list') onViewChange('timebox');
-            else if (view === 'timebox') onViewChange('calendar');
-            else onViewChange('list');
-          }}
+          onClick={() => onViewChange('list')}
           className="h-8 w-8"
-          title={
-            view === 'list' ? '타임박스 보기' : 
-            view === 'timebox' ? '캘린더 보기' : 
-            '리스트 보기'
-          }
+          title="리스트 보기"
         >
-          {view === 'list' ? <Clock className="h-4 w-4" /> : 
-           view === 'timebox' ? <Calendar className="h-4 w-4" /> : 
-           <List className="h-4 w-4" />}
+          <List className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          variant={view === 'calendar' ? "default" : "ghost"}
+          size="icon"
+          onClick={() => onViewChange('calendar')}
+          className="h-8 w-8"
+          title="캘린더 보기"
+        >
+          <Calendar className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          variant={view === 'timebox' ? "default" : "ghost"}
+          size="icon"
+          onClick={() => onViewChange('timebox')}
+          className="h-8 w-8"
+          title="타임박스 보기"
+        >
+          <Clock className="h-4 w-4" />
         </Button>
 
         {onToggleTimerSidebar && (

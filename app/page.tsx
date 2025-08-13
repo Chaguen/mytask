@@ -50,14 +50,14 @@ export default function Home() {
         <TodoErrorBoundary>
           {view === 'list' ? (
             <TodoList />
-          ) : view === 'timebox' ? (
-            <TimeboxView />
-          ) : (
+          ) : view === 'calendar' ? (
             <CalendarView 
               todos={todos}
               onToggleTodo={toggleTodo}
               onEditTodo={(id, parentIds) => setTodoEditing(id, true, parentIds)}
             />
+          ) : (
+            <TimeboxView />
           )}
         </TodoErrorBoundary>
       </main>
