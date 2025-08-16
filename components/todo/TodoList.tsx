@@ -37,6 +37,8 @@ function TodoListContent() {
     setInputValue,
     isExpanded,
     toggleExpanded,
+    expandAll,
+    collapseAll,
     addTodo,
     toggleTodo,
     deleteTodo,
@@ -242,17 +244,37 @@ function TodoListContent() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">My Todo List</CardTitle>
-          {stats.completed > 0 && (
+          <div className="flex gap-1">
             <Button
               variant="ghost"
               size="sm"
-              onClick={clearCompleted}
+              onClick={expandAll}
               className="text-xs h-8 px-2"
-              title="완료된 모든 항목 삭제"
+              title="모든 하위 할일 펼치기"
             >
-              완료 삭제
+              모두 펼치기
             </Button>
-          )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={collapseAll}
+              className="text-xs h-8 px-2"
+              title="모든 하위 할일 접기"
+            >
+              모두 접기
+            </Button>
+            {stats.completed > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearCompleted}
+                className="text-xs h-8 px-2"
+                title="완료된 모든 항목 삭제"
+              >
+                완료 삭제
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

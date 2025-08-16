@@ -41,7 +41,7 @@ export function useTodos() {
   const [showOnlyFocusTasks, setShowOnlyFocusTasks] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<ViewMode>('all');
   const { loading, error, loadTodos, saveTodos } = useTodoAPI();
-  const { expandedTodos, toggleExpanded, expand, collapse, isExpanded } = useExpandedState();
+  const { expandedTodos, setExpandedTodos, toggleExpanded, expand, collapse, isExpanded } = useExpandedState();
   
   const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
@@ -426,6 +426,26 @@ export function useTodos() {
     setViewMode(prev => prev === 'all' ? 'today' : 'all');
   }, []);
 
+  const expandAll = useCallback(() => {
+    const allIds = new Set<number>();
+    
+    const collectAllIds = (todoList: Todo[]) => {
+      todoList.forEach(todo => {
+        if (todo.subtasks && todo.subtasks.length > 0) {
+          allIds.add(todo.id);
+          collectAllIds(todo.subtasks);
+        }
+      });
+    };
+    
+    collectAllIds(todos);
+    setExpandedTodos(allIds);
+  }, [todos]);
+
+  const collapseAll = useCallback(() => {
+    setExpandedTodos(new Set());
+  }, []);
+
   return {
     todos,
     visibleTodos,
@@ -438,6 +458,8 @@ export function useTodos() {
     expandedTodos,
     isExpanded,
     toggleExpanded,
+    expandAll,
+    collapseAll,
     addTodo,
     toggleTodo,
     deleteTodo,

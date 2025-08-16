@@ -17,6 +17,8 @@ interface TodoContextType {
   expandedTodos: Set<number>;
   isExpanded: (id: number) => boolean;
   toggleExpanded: (id: number) => void;
+  expandAll: () => void;
+  collapseAll: () => void;
   addTodo: () => void;
   toggleTodo: (id: number, parentIds?: TodoPath) => void;
   deleteTodo: (id: number, parentIds?: TodoPath) => void;

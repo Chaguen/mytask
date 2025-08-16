@@ -33,6 +33,7 @@ export function useExpandedState() {
 
   return {
     expandedTodos,
+    setExpandedTodos,
     toggleExpanded,
     expand,
     collapse,
